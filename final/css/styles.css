@@ -1,0 +1,381 @@
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    height: 100vh;
+    overflow: hidden;
+    touch-action: manipulation;
+}
+
+/* Main container with 70/30 split */
+.photobooth-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Camera section (70%) */
+.camera-section {
+    flex: 0 0 70%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Instax photo frame styling */
+.instax-frame {
+    position: relative;
+    background: #ffffff;
+    padding: 20px 20px 60px 20px;
+    border-radius: 8px;
+    box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.3),
+        inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+    max-width: 90%;
+    max-height: 90%;
+    width: 400px;
+    height: 300px;
+    aspect-ratio: 4/3;
+    transform: rotate(-1deg);
+    transition: transform 0.3s ease;
+}
+
+.instax-frame:hover {
+    transform: rotate(0deg) scale(1.02);
+}
+
+.instax-frame::after {
+    content: "INSTAX";
+    position: absolute;
+    bottom: 15px;
+    right: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #666;
+    letter-spacing: 2px;
+}
+
+/* Camera feed and photo display */
+#camera-feed,
+#photo-result {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #f0f0f0;
+}
+
+#photo-canvas {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: calc(100% - 40px);
+    height: calc(100% - 80px);
+}
+
+.captured-photo {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: calc(100% - 40px);
+    height: calc(100% - 80px);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Countdown overlay */
+.countdown-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    z-index: 10;
+}
+
+#countdown-number {
+    font-size: 120px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    animation: countdown-pulse 1s ease-in-out;
+}
+
+@keyframes countdown-pulse {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Control panel (30%) */
+.control-panel {
+    flex: 0 0 30%;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+}
+
+.controls-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+/* Timer section */
+.timer-section {
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.timer-section h3 {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.timer-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.timer-btn {
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 50%;
+    background: #667eea;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    touch-action: manipulation;
+}
+
+.timer-btn:hover {
+    background: #5a6fd8;
+    transform: scale(1.1);
+}
+
+.timer-btn:active {
+    transform: scale(0.95);
+}
+
+#timer-display {
+    font-size: 36px;
+    font-weight: bold;
+    color: #333;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* Control buttons */
+.control-btn {
+    width: 200px;
+    height: 70px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    touch-action: manipulation;
+    text-align: center;
+}
+
+.control-btn span {
+    font-size: 24px;
+}
+
+.control-btn:active {
+    transform: scale(0.95);
+}
+
+.control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Button specific styles */
+.camera-switch {
+    background: linear-gradient(135deg, #74b9ff, #0984e3);
+    color: white;
+    box-shadow: 0 4px 15px rgba(116, 185, 255, 0.4);
+}
+
+.camera-switch:hover:not(:disabled) {
+    background: linear-gradient(135deg, #0984e3, #74b9ff);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(116, 185, 255, 0.6);
+}
+
+.take-photo {
+    background: linear-gradient(135deg, #00b894, #00a085);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 184, 148, 0.4);
+}
+
+.take-photo:hover:not(:disabled) {
+    background: linear-gradient(135deg, #00a085, #00b894);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 184, 148, 0.6);
+}
+
+.print-btn {
+    background: linear-gradient(135deg, #fd79a8, #e84393);
+    color: white;
+    box-shadow: 0 4px 15px rgba(253, 121, 168, 0.4);
+}
+
+.print-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e84393, #fd79a8);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(253, 121, 168, 0.6);
+}
+
+.share-btn {
+    background: linear-gradient(135deg, #fdcb6e, #e17055);
+    color: white;
+    box-shadow: 0 4px 15px rgba(253, 203, 110, 0.4);
+}
+
+.share-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e17055, #fdcb6e);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(253, 203, 110, 0.6);
+}
+
+.retake-btn {
+    background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+    color: white;
+    box-shadow: 0 4px 15px rgba(162, 155, 254, 0.4);
+}
+
+.retake-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(162, 155, 254, 0.6);
+}
+
+/* Responsive adjustments for different tablet sizes */
+@media (max-width: 1024px) {
+    .instax-frame {
+        max-width: 95%;
+        max-height: 85%;
+    }
+    
+    .control-panel {
+        padding: 20px 15px;
+    }
+    
+    .control-btn {
+        width: 180px;
+        height: 60px;
+        font-size: 14px;
+    }
+    
+    #countdown-number {
+        font-size: 100px;
+    }
+}
+
+@media (max-width: 768px) {
+    .photobooth-container {
+        flex-direction: column;
+    }
+    
+    .camera-section {
+        flex: 0 0 65%;
+    }
+    
+    .control-panel {
+        flex: 0 0 35%;
+        padding: 15px;
+    }
+    
+    .controls-grid {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .control-btn {
+        width: 120px;
+        height: 50px;
+        font-size: 12px;
+    }
+    
+    .timer-section {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+}
+
+/* Loading and error states */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    color: #666;
+    font-size: 18px;
+}
+
+.error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffe6e6;
+    color: #d63031;
+    font-size: 16px;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Animation for photo capture */
+.flash-effect {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    animation: camera-flash 0.3s ease-out;
+}
+
+@keyframes camera-flash {
+    0% { opacity: 0; }
+    50% { opacity: 0.8; }
+    100% { opacity: 0; }
+}

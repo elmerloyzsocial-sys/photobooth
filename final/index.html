@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instax Photobooth</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="photobooth-container">
+        <!-- Camera Display Area (70%) -->
+        <div class="camera-section">
+            <div class="instax-frame">
+                <video
+id="camera-feed"
+autoplay
+playsinline
+></video>
+                <canvas id="photo-canvas" style="display: none;"></canvas>
+                <div
+id="captured-photo"
+class="captured-photo"
+style="display: none;"
+>
+                    <img id="photo-result" alt="Captured photo">
+                </div>
+                <div
+id="countdown-overlay"
+class="countdown-overlay"
+style="display: none;"
+>
+                    <span id="countdown-number">3</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Panel (30%) -->
+        <div class="control-panel">
+            <div class="controls-grid">
+                <!-- Timer Controls -->
+                <div class="timer-section">
+                    <h3>Timer</h3>
+                    <div class="timer-controls">
+                        <button id="timer-decrease" class="timer-btn">-</button>
+                        <span id="timer-display">3</span>
+                        <button id="timer-increase" class="timer-btn">+</button>
+                    </div>
+                </div>
+
+                <!-- Camera Switch -->
+                <button id="switch-camera" class="control-btn camera-switch">
+                    <span>📷</span>
+                    Switch Camera
+                </button>
+
+                <!-- Take Photo -->
+                <button id="take-photo" class="control-btn take-photo">
+                    <span>📸</span>
+                    Take Photo
+                </button>
+
+                <!-- Print Button -->
+                <button
+id="print-photo"
+class="control-btn print-btn"
+disabled
+>
+                    <span>🖨️</span>
+                    Print
+                </button>
+
+                <!-- Share Button -->
+                <button
+id="share-photo"
+class="control-btn share-btn"
+disabled
+>
+                    <span>📤</span>
+                    Share
+                </button>
+
+                <!-- Retake Button -->
+                <button
+id="retake-photo"
+class="control-btn retake-btn"
+style="display: none;"
+>
+                    <span>🔄</span>
+                    Retake
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/photobooth.js"></script>
+</body>
+</html>
