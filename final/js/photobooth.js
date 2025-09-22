@@ -6,20 +6,7 @@ class PhotoboothApp {
         this.isCountingDown = false;
         this.isLargeVideo = false;
 
-        // Frame selection state
-        this.frameStyles = [
-            { id: 'instax', name: 'Instax', icon: '📸' },
-            { id: 'polaroid', name: 'Polaroid', icon: '🟦' },
-            { id: 'simple-black', name: 'Black', icon: '⬛' },
-            { id: 'gold', name: 'Gold', icon: '🥇' },
-            { id: 'rainbow', name: 'Rainbow', icon: '🌈' },
-            { id: 'retro', name: 'Retro', icon: '🕹️' },
-            { id: 'neon', name: 'Neon', icon: '💡' },
-            { id: 'minimal', name: 'Minimal', icon: '⚪' },
-            { id: 'funky', name: 'Funky', icon: '🎨' }
-        ];
-        this.selectedFrame = 'instax';
-
+        // Remove frame selection state
         this.capturedPhotoBlobs = []; // Array of 4 photo blobs
         this.currentPhotoIndex = 0; // Which photo is shown/previewed
 
@@ -44,8 +31,7 @@ class PhotoboothApp {
         this.shareBtn = document.getElementById('share-photo');
         this.retakeBtn = document.getElementById('retake-photo');
         this.toggleVideoSizeBtn = document.getElementById('toggle-video-size');
-        this.framePicker = document.getElementById('frame-picker');
-        this.framePickerInner = document.getElementById('frame-picker-inner');
+        // Remove framePicker and framePickerInner
         this.downloadGalleryBtn = document.getElementById('download-gallery');
         this.photoGallery = document.getElementById('photo-gallery');
     }
@@ -60,19 +46,7 @@ class PhotoboothApp {
         this.shareBtn.addEventListener('click', () => this.sharePhoto());
         this.toggleVideoSizeBtn.addEventListener('click', () => this.toggleVideoSize());
         this.downloadGalleryBtn.addEventListener('click', () => this.downloadGallery());
-        // Frame picker
-        if (this.framePickerInner) {
-            this.frameStyles.forEach((frame, idx) => {
-                const btn = document.createElement('button');
-                btn.className = 'frame-thumb';
-                btn.dataset.frame = frame.id;
-                btn.title = frame.name;
-                btn.innerHTML = `<span class="frame-icon">${frame.icon}</span><span class="frame-name">${frame.name}</span>`;
-                if (frame.id === this.selectedFrame) btn.classList.add('selected');
-                btn.addEventListener('click', () => this.selectFrame(frame.id));
-                this.framePickerInner.appendChild(btn);
-            });
-        }
+        // Remove frame picker UI events
         window.addEventListener('orientationchange', () => setTimeout(() => this.handleOrientationChange(), 500));
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && !this.stream) {
@@ -119,7 +93,7 @@ class PhotoboothApp {
             });
             this.videoElement.style.display = 'block';
             this.capturedPhotoDiv.style.display = 'none';
-            this.framePicker.style.display = 'none';
+            // Remove framePicker
             this.photoGallery.style.display = 'none';
             this.downloadGalleryBtn.style.display = 'none';
             this.enableCameraControls();
@@ -274,7 +248,8 @@ class PhotoboothApp {
                     ctx.drawImage(video, drawX, drawY, drawWidth, drawHeight);
                 }
                 ctx.restore();
-                this.addFrameStyling(ctx, frameWidth, frameHeight, this.selectedFrame);
+                // Always use the single "thank you" frame style
+                this.addThankYouFrame(ctx, frameWidth, frameHeight);
                 this.canvasElement.toBlob(blob => {
                     this.capturedPhotoBlobs.push(blob);
                     resolve(blob);
@@ -290,7 +265,7 @@ class PhotoboothApp {
         if (!this.capturedPhotoBlobs[idx]) return;
         this.capturedPhotoDiv.style.display = 'block';
         this.videoElement.style.display = 'none';
-        this.framePicker.style.display = 'block';
+        // Remove framePicker
         this.photoGallery.style.display = 'flex';
         const photoURL = URL.createObjectURL(this.capturedPhotoBlobs[idx]);
         this.photoResult.src = photoURL;
@@ -343,126 +318,17 @@ class PhotoboothApp {
         });
     }
 
-    // --- Frame picker ---
-    selectFrame(frameId) {
-        if (!this.frameStyles.some(f => f.id === frameId)) return;
-        this.selectedFrame = frameId;
-        Array.from(this.framePickerInner.children).forEach(btn =>
-            btn.classList.toggle('selected', btn.dataset.frame === frameId)
-        );
-        // Redraw all photo frames
-        this.capturedPhotoBlobs.forEach((blob, idx) => {
-            this.applyFrameToPhoto(blob, idx);
-        });
-        // Show current photo with new frame
-        this.showPhoto(this.currentPhotoIndex);
-    }
-
-    applyFrameToPhoto(blob, idx) {
-        const img = new window.Image();
-        img.onload = () => {
-            const ctx = this.canvasElement.getContext('2d');
-            this.canvasElement.width = img.width;
-            this.canvasElement.height = img.height;
-            ctx.clearRect(0, 0, img.width, img.height);
-            ctx.drawImage(img, 0, 0, img.width, img.height);
-            this.addFrameStyling(ctx, img.width, img.height, this.selectedFrame);
-            this.canvasElement.toBlob(newBlob => {
-                this.capturedPhotoBlobs[idx] = newBlob;
-                // update gallery thumbnail
-                this.updateGallery(this.currentPhotoIndex);
-            }, 'image/jpeg', 0.9);
-        };
-        img.src = URL.createObjectURL(blob);
-    }
-
-    // --- Frame Drawing ---
-    addFrameStyling(ctx, width, height, frameId) {
-        switch (frameId) {
-            case 'instax':
-            default:
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(20, 20, width - 40, height - 80);
-                ctx.fillStyle = '#666666';
-                ctx.font = 'bold 16px Arial';
-                ctx.letterSpacing = '2px';
-                ctx.textAlign = 'right';
-                ctx.fillText('INSTAX', width - 25, height - 20);
-                break;
-            case 'polaroid':
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(0, 0, width, height);
-                ctx.strokeStyle = '#222';
-                ctx.lineWidth = 8;
-                ctx.strokeRect(0, 0, width, height);
-                ctx.fillStyle = '#222';
-                ctx.font = 'bold 24px Courier';
-                ctx.textAlign = 'center';
-                ctx.fillText('Polaroid', width / 2, height - 18);
-                break;
-            case 'simple-black':
-                ctx.strokeStyle = '#222';
-                ctx.lineWidth = 20;
-                ctx.strokeRect(0, 0, width, height);
-                break;
-            case 'gold':
-                ctx.strokeStyle = '#FFD700';
-                ctx.lineWidth = 18;
-                ctx.strokeRect(0, 0, width, height);
-                ctx.shadowColor = '#FFD700';
-                ctx.shadowBlur = 12;
-                break;
-            case 'rainbow':
-                var grad = ctx.createLinearGradient(0, 0, width, height);
-                grad.addColorStop(0, "#ff5e62");
-                grad.addColorStop(0.25, "#ff9966");
-                grad.addColorStop(0.5, "#f5f7b2");
-                grad.addColorStop(0.75, "#8fd3f4");
-                grad.addColorStop(1, "#84fab0");
-                ctx.strokeStyle = grad;
-                ctx.lineWidth = 14;
-                ctx.strokeRect(8, 8, width - 16, height - 16);
-                break;
-            case 'retro':
-                ctx.strokeStyle = '#d35400';
-                ctx.lineWidth = 14;
-                ctx.strokeRect(12, 12, width - 24, height - 24);
-                ctx.setLineDash([10, 10]);
-                ctx.strokeStyle = '#27ae60';
-                ctx.lineWidth = 6;
-                ctx.strokeRect(26, 26, width - 52, height - 52);
-                ctx.setLineDash([]);
-                ctx.fillStyle = '#d35400';
-                ctx.font = 'bold 18px Arial';
-                ctx.textAlign = 'left';
-                ctx.fillText('RETRO', 32, height - 16);
-                break;
-            case 'neon':
-                ctx.shadowColor = '#00FFC6';
-                ctx.shadowBlur = 20;
-                ctx.strokeStyle = '#00FFC6';
-                ctx.lineWidth = 10;
-                ctx.strokeRect(6, 6, width - 12, height - 12);
-                ctx.shadowBlur = 0;
-                break;
-            case 'minimal':
-                ctx.strokeStyle = '#aaa';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(20, 20, width - 40, height - 40);
-                break;
-            case 'funky':
-                ctx.strokeStyle = '#8e44ad';
-                ctx.lineWidth = 12;
-                ctx.setLineDash([6, 8]);
-                ctx.strokeRect(10, 10, width - 20, height - 20);
-                ctx.setLineDash([]);
-                ctx.fillStyle = '#e84393';
-                ctx.font = 'bold 16px Comic Sans MS, cursive';
-                ctx.textAlign = 'center';
-                ctx.fillText('FUNKY!', width / 2, 35);
-                break;
-        }
+    // --- Frame Drawing: Only the "Thank You" frame style remains ---
+    addThankYouFrame(ctx, width, height) {
+        // Simple white frame with a thin border and thank you text on bottom right
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(20, 20, width - 40, height - 80);
+        ctx.fillStyle = '#666666';
+        ctx.font = 'bold 20px Arial';
+        // ctx.letterSpacing does not exist on canvas; ignore
+        ctx.textAlign = 'right';
+        ctx.fillText('Thank you for celebrating with us', width - 25, height - 20);
     }
 
     createFlashEffect() {
@@ -479,7 +345,7 @@ class PhotoboothApp {
         this.currentPhotoIndex = 0;
         this.capturedPhotoDiv.style.display = 'none';
         this.videoElement.style.display = 'block';
-        this.framePicker.style.display = 'none';
+        // Remove framePicker
         this.photoGallery.style.display = 'none';
         this.downloadGalleryBtn.style.display = 'none';
         this.printBtn.disabled = true;
@@ -574,7 +440,7 @@ class PhotoboothApp {
 document.addEventListener('DOMContentLoaded', () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         document.body.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; background: #f8f9fa; color: #d63031; text-align: center; padding: 20px; font-family: Arial, sans-serif;">
+            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; background: #f8f9fa; color: #d63031; text-align: center; padding: 20px; font-family: Arial, sans-ser[...]
                 <div>
                     <h2>Camera Not Supported</h2>
                     <p>This browser doesn't support camera access. Please use a modern browser like Chrome, Firefox, or Safari.</p>
