@@ -58,8 +58,8 @@ body {
     transition: width 0.3s, height 0.3s;
 }
 .instax-frame.large-size {
-    width: 1280px; /* 780px 585px 30% increase */
-    height: 960px;
+    width: 1600px; /* 780px 585px 30% increase */
+    height: 1200px;
     transition: width 0.3s, height 0.3s;
 }
 
