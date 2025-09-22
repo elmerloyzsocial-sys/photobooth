@@ -6,11 +6,28 @@ class PhotoboothApp {
         this.isCountingDown = false;
         this.capturedPhotoBlob = null;
 
-        // NEW: Collage state
+        // Collage state
         this.isCollageMode = false;
         this.collagePhotos = [];
         this.collageStep = 0;
         this.maxCollage = 4;
+
+        // Video size state
+        this.isLargeVideo = false;
+
+        // Frame selection state
+        this.frameStyles = [
+            { id: 'instax', name: 'Instax', icon: '📸' },
+            { id: 'polaroid', name: 'Polaroid', icon: '🟦' },
+            { id: 'simple-black', name: 'Black', icon: '⬛' },
+            { id: 'gold', name: 'Gold', icon: '🥇' },
+            { id: 'rainbow', name: 'Rainbow', icon: '🌈' },
+            { id: 'retro', name: 'Retro', icon: '🕹️' },
+            { id: 'neon', name: 'Neon', icon: '💡' },
+            { id: 'minimal', name: 'Minimal', icon: '⚪' },
+            { id: 'funky', name: 'Funky', icon: '🎨' }
+        ];
+        this.selectedFrame = 'instax';
 
         this.initializeElements();
         this.bindEvents();
@@ -40,9 +57,16 @@ class PhotoboothApp {
         this.shareBtn = document.getElementById('share-photo');
         this.retakeBtn = document.getElementById('retake-photo');
 
-        // NEW: Collage button & progress overlay
+        // Collage button & progress overlay
         this.collageBtn = document.getElementById('collage-mode');
         this.collageProgress = document.getElementById('collage-progress');
+
+        // Toggle video size button
+        this.toggleVideoSizeBtn = document.getElementById('toggle-video-size');
+
+        // Frame picker UI
+        this.framePicker = document.getElementById('frame-picker');
+        this.framePickerInner = document.getElementById('frame-picker-inner');
     }
 
     bindEvents() {
@@ -59,17 +83,34 @@ class PhotoboothApp {
         this.printBtn.addEventListener('click', () => this.printPhoto());
         this.shareBtn.addEventListener('click', () => this.sharePhoto());
 
-        // NEW: Collage mode
+        // Collage mode
         if (this.collageBtn) {
             this.collageBtn.addEventListener('click', () => this.startCollageMode());
         }
 
-        // Handle orientation changes
+        // Toggle video size
+        if (this.toggleVideoSizeBtn) {
+            this.toggleVideoSizeBtn.addEventListener('click', () => this.toggleVideoSize());
+        }
+
+        // Frame picker
+        if (this.framePickerInner) {
+            this.frameStyles.forEach(frame => {
+                const btn = document.createElement('button');
+                btn.className = 'frame-thumb';
+                btn.dataset.frame = frame.id;
+                btn.title = frame.name;
+                btn.innerHTML = `<span class="frame-icon">${frame.icon}</span><span class="frame-name">${frame.name}</span>`;
+                if (frame.id === this.selectedFrame) btn.classList.add('selected');
+                btn.addEventListener('click', () => this.selectFrame(frame.id));
+                this.framePickerInner.appendChild(btn);
+            });
+        }
+
+        // Handle orientation/visibility
         window.addEventListener('orientationchange', () => {
             setTimeout(() => this.handleOrientationChange(), 500);
         });
-
-        // Handle visibility changes (when app goes to background/foreground)
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && !this.stream) {
                 this.initializeCamera();
@@ -77,25 +118,81 @@ class PhotoboothApp {
         });
     }
 
+    selectFrame(frameId) {
+        if (!this.frameStyles.some(f => f.id === frameId)) return;
+        this.selectedFrame = frameId;
+        // update selected class
+        if (this.framePickerInner) {
+            Array.from(this.framePickerInner.children).forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.frame === frameId);
+            });
+        }
+        // re-draw photo with the new frame if a photo exists
+        if (this.capturedPhotoBlob) {
+            this.applyFrameToPhoto();
+        }
+    }
+
+    // Re-generate the photoResult image with the selected frame
+    applyFrameToPhoto() {
+        // We'll need to re-draw the last captured photo or collage with the new frame
+        // The easiest way: redraw the canvas, then display the new result
+
+        // For single photo, the last frame is in the canvas
+        // For collage, the raw collage is not kept, so we just update the frame
+        // We'll use the last canvas content, but re-draw the frame.
+
+        // Get the last photo image
+        const img = new window.Image();
+        const prevBlob = this.capturedPhotoBlob;
+        if (!prevBlob) return;
+        img.onload = () => {
+            const ctx = this.canvasElement.getContext('2d');
+            // Redraw the photo
+            this.canvasElement.width = img.width;
+            this.canvasElement.height = img.height;
+            ctx.clearRect(0, 0, img.width, img.height);
+            ctx.drawImage(img, 0, 0, img.width, img.height);
+            // Draw selected frame
+            this.addFrameStyling(ctx, img.width, img.height, this.selectedFrame);
+            // Update preview and blob
+            this.canvasElement.toBlob(blob => {
+                this.capturedPhotoBlob = blob;
+                const photoURL = URL.createObjectURL(blob);
+                this.photoResult.src = photoURL;
+                this.photoResult.onload = () => URL.revokeObjectURL(photoURL);
+            }, 'image/jpeg', 0.9);
+        };
+        img.src = URL.createObjectURL(prevBlob);
+    }
+
+    // Toggle video size function (unchanged)
+    toggleVideoSize() {
+        if (!this.videoElement) return;
+        this.isLargeVideo = !this.isLargeVideo;
+        if (this.isLargeVideo) {
+            this.videoElement.classList.remove('normal-size');
+            this.videoElement.classList.add('large-size');
+            this.toggleVideoSizeBtn.textContent = '🔍 Shrink Video';
+        } else {
+            this.videoElement.classList.remove('large-size');
+            this.videoElement.classList.add('normal-size');
+            this.toggleVideoSizeBtn.textContent = '🔍 Toggle Video Size';
+        }
+    }
+
     async initializeCamera() {
         try {
-            // Stop existing stream if any
             if (this.stream) {
                 this.stream.getTracks().forEach(track => track.stop());
             }
-
-            // Check if camera devices are available first
             const devices = await navigator.mediaDevices.enumerateDevices();
             const videoDevices = devices.filter(device => device.kind === 'videoinput');
-
             if (videoDevices.length === 0) {
-                // Handle gracefully for testing environments
                 console.warn('No camera devices found - this is expected in testing environments');
                 this.handleCameraError(new Error('No camera devices found'));
                 return;
             }
-
-            // Request camera access with fallback constraints
             let constraints = {
                 video: {
                     facingMode: this.currentCamera,
@@ -104,12 +201,9 @@ class PhotoboothApp {
                 },
                 audio: false
             };
-
             try {
                 this.stream = await navigator.mediaDevices.getUserMedia(constraints);
             } catch (facingModeError) {
-                // Fallback: try without facingMode constraint
-                console.warn('Specific camera facing mode not available, trying default camera:', facingModeError.message);
                 constraints = {
                     video: {
                         width: { ideal: 1280 },
@@ -119,23 +213,21 @@ class PhotoboothApp {
                 };
                 this.stream = await navigator.mediaDevices.getUserMedia(constraints);
             }
-
             this.videoElement.srcObject = this.stream;
-
-            // Wait for video to be ready
             await new Promise((resolve) => {
                 this.videoElement.onloadedmetadata = resolve;
             });
-
-            // Show video, hide any captured photo
             this.videoElement.style.display = 'block';
             this.capturedPhotoDiv.style.display = 'none';
             if (this.collageProgress) this.collageProgress.style.display = 'none';
-
-            // Enable camera controls
             this.enableCameraControls();
-
-            console.log('Camera initialized successfully');
+            if (this.isLargeVideo) {
+                this.videoElement.classList.remove('normal-size');
+                this.videoElement.classList.add('large-size');
+            } else {
+                this.videoElement.classList.remove('large-size');
+                this.videoElement.classList.add('normal-size');
+            }
         } catch (error) {
             console.error('Error accessing camera:', error);
             this.handleCameraError(error);
@@ -144,7 +236,6 @@ class PhotoboothApp {
 
     handleCameraError(error) {
         let errorMessage = 'Camera access failed. ';
-
         if (error.name === 'NotAllowedError') {
             errorMessage += 'Please allow camera permissions and refresh the page.';
         } else if (error.name === 'NotFoundError') {
@@ -154,7 +245,6 @@ class PhotoboothApp {
         } else {
             errorMessage += 'Please check your camera and try again.';
         }
-
         this.videoElement.style.display = 'none';
         this.videoElement.parentElement.innerHTML = `<div class="error">${errorMessage}</div>`;
         this.disableCameraControls();
@@ -164,12 +254,14 @@ class PhotoboothApp {
         this.switchCameraBtn.disabled = false;
         this.takePhotoBtn.disabled = false;
         if (this.collageBtn) this.collageBtn.disabled = false;
+        if (this.toggleVideoSizeBtn) this.toggleVideoSizeBtn.disabled = false;
     }
 
     disableCameraControls() {
         this.switchCameraBtn.disabled = true;
         this.takePhotoBtn.disabled = true;
         if (this.collageBtn) this.collageBtn.disabled = true;
+        if (this.toggleVideoSizeBtn) this.toggleVideoSizeBtn.disabled = true;
     }
 
     adjustTimer(change) {
@@ -182,40 +274,33 @@ class PhotoboothApp {
 
     async switchCamera() {
         if (this.isCountingDown) return;
-
         try {
             this.currentCamera = this.currentCamera === 'user' ? 'environment' : 'user';
             await this.initializeCamera();
         } catch (error) {
             console.error('Error switching camera:', error);
-            // Revert camera setting if switch fails
             this.currentCamera = this.currentCamera === 'user' ? 'environment' : 'user';
         }
     }
 
     startCountdown() {
         if (this.isCountingDown || !this.stream) return;
-
         if (this.timerSeconds === 0) {
             this.capturePhoto();
             return;
         }
-
         this.isCountingDown = true;
         this.takePhotoBtn.disabled = true;
         this.switchCameraBtn.disabled = true;
         if (this.collageBtn) this.collageBtn.disabled = true;
-
+        if (this.toggleVideoSizeBtn) this.toggleVideoSizeBtn.disabled = true;
         let countdown = this.timerSeconds;
         this.countdownNumber.textContent = countdown;
         this.countdownOverlay.style.display = 'flex';
-
         const countdownInterval = setInterval(() => {
             countdown--;
-
             if (countdown > 0) {
                 this.countdownNumber.textContent = countdown;
-                // Trigger animation by removing and re-adding class
                 this.countdownNumber.style.animation = 'none';
                 setTimeout(() => {
                     this.countdownNumber.style.animation = 'countdown-pulse 1s ease-in-out';
@@ -228,66 +313,45 @@ class PhotoboothApp {
                 this.takePhotoBtn.disabled = false;
                 this.switchCameraBtn.disabled = false;
                 if (this.collageBtn) this.collageBtn.disabled = false;
+                if (this.toggleVideoSizeBtn) this.toggleVideoSizeBtn.disabled = false;
             }
         }, 1000);
     }
 
     capturePhoto() {
         if (!this.stream) return;
-
         try {
-            // Create flash effect
             this.createFlashEffect();
-
             const video = this.videoElement;
-
-            // Calculate 4:3 aspect ratio dimensions
             const aspectRatio = 4 / 3;
-            const frameWidth = 800;  // Base width for 4:3 format
-            const frameHeight = frameWidth / aspectRatio; // 600px height
-
-            // Set canvas dimensions for 4:3 aspect ratio
+            const frameWidth = 800;
+            const frameHeight = frameWidth / aspectRatio;
             this.canvasElement.width = frameWidth;
             this.canvasElement.height = frameHeight;
-
             const ctx = this.canvasElement.getContext('2d');
-
-            // Fill with white background (Instax frame background)
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, frameWidth, frameHeight);
-
-            // Calculate photo area within the frame (accounting for Instax padding)
             const padding = 20;
-            const bottomPadding = 60; // Extra space for INSTAX branding
+            const bottomPadding = 60;
             const photoX = padding;
             const photoY = padding;
             const photoWidth = frameWidth - (padding * 2);
             const photoHeight = frameHeight - padding - bottomPadding;
-
-            // Calculate video scaling to fit photo area while maintaining aspect ratio
             const videoAspect = video.videoWidth / video.videoHeight;
             const photoAspect = photoWidth / photoHeight;
-
             let drawWidth, drawHeight, drawX, drawY;
-
             if (videoAspect > photoAspect) {
-                // Video is wider - fit to height
                 drawHeight = photoHeight;
                 drawWidth = drawHeight * videoAspect;
                 drawX = photoX + (photoWidth - drawWidth) / 2;
                 drawY = photoY;
             } else {
-                // Video is taller - fit to width
                 drawWidth = photoWidth;
                 drawHeight = drawWidth / videoAspect;
                 drawX = photoX;
                 drawY = photoY + (photoHeight - drawHeight) / 2;
             }
-
-            // Save context for flipping
             ctx.save();
-
-            // Flip image if using front camera
             if (this.currentCamera === 'user') {
                 ctx.translate(drawX + drawWidth, drawY);
                 ctx.scale(-1, 1);
@@ -295,79 +359,114 @@ class PhotoboothApp {
             } else {
                 ctx.drawImage(video, drawX, drawY, drawWidth, drawHeight);
             }
-
-            // Restore context
             ctx.restore();
-
-            // Add Instax frame styling
-            this.addInstaxFrameStyling(ctx, frameWidth, frameHeight);
-
-            // NEW: Collage Mode
+            this.addFrameStyling(ctx, frameWidth, frameHeight, this.selectedFrame);
             if (this.isCollageMode) {
-                // Save as dataURL for collage assembly
                 this.canvasElement.toBlob((blob) => {
                     this.collagePhotos.push(blob);
                     this.collageStep++;
                     this.showCollageProgress();
                     if (this.collageStep < this.maxCollage) {
-                        // Prompt for next photo
                         setTimeout(() => {
                             this.videoElement.style.display = 'block';
                             this.capturedPhotoDiv.style.display = 'none';
                         }, 700);
                     } else {
-                        // Assemble collage
                         setTimeout(() => this.assembleCollage(), 700);
                     }
                 }, 'image/jpeg', 0.9);
-                // Show a preview flash after each shot
                 this.showCollageProgress();
                 return;
             }
-
-            // Normal mode: Convert canvas to blob and display
             this.canvasElement.toBlob((blob) => {
                 this.capturedPhotoBlob = blob;
-
-                // Display captured photo
                 const photoURL = URL.createObjectURL(blob);
                 this.photoResult.src = photoURL;
                 this.photoResult.onload = () => URL.revokeObjectURL(photoURL);
-
-                // Show captured photo, hide video
                 this.videoElement.style.display = 'none';
                 this.capturedPhotoDiv.style.display = 'block';
-
-                // Enable photo action buttons
                 this.printBtn.disabled = false;
                 this.shareBtn.disabled = false;
                 this.retakeBtn.style.display = 'block';
                 this.takePhotoBtn.style.display = 'none';
-
                 if (this.collageBtn) this.collageBtn.disabled = false;
+                if (this.toggleVideoSizeBtn) this.toggleVideoSizeBtn.disabled = false;
+                if (this.framePicker) this.framePicker.style.display = 'block';
             }, 'image/jpeg', 0.9);
-
         } catch (error) {
             console.error('Error capturing photo:', error);
             alert('Failed to capture photo. Please try again.');
         }
     }
 
-    // Collage Mode: UI and Assembly
-    startCollageMode() {
-        this.isCollageMode = true;
-        this.collagePhotos = [];
-        this.collageStep = 0;
-        this.capturedPhotoDiv.style.display = 'none';
-        this.videoElement.style.display = 'block';
-        this.printBtn.disabled = true;
-        this.shareBtn.disabled = true;
-        this.retakeBtn.style.display = 'none';
-        this.takePhotoBtn.style.display = 'block';
-        this.takePhotoBtn.disabled = false;
-        if (this.collageBtn) this.collageBtn.disabled = true;
-        this.showCollageProgress();
-        this.startCountdown();
+    // Collage Mode: UI and Assembly (4x1 layout)
+    assembleCollage() {
+        const singleWidth = 400;
+        const singleHeight = 300;
+        const collageWidth = singleWidth * 4 + 60;
+        const collageHeight = singleHeight;
+        this.canvasElement.width = collageWidth;
+        this.canvasElement.height = collageHeight;
+        const ctx = this.canvasElement.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, collageWidth, collageHeight);
+        const positions = [
+            [0, 0],
+            [singleWidth + 20, 0],
+            [2 * (singleWidth + 20), 0],
+            [3 * (singleWidth + 20), 0]
+        ];
+        let loadedImgs = 0;
+        const imageEls = [];
+        const drawFramedImage = (img, ix, iy) => {
+            ctx.save();
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(ix, iy, singleWidth, singleHeight);
+            ctx.drawImage(img, ix + 12, iy + 12, singleWidth - 24, singleHeight - 36);
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(ix + 12, iy + 12, singleWidth - 24, singleHeight - 36);
+            ctx.fillStyle = '#666666';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText('INSTAX', ix + singleWidth - 18, iy + singleHeight - 12);
+            ctx.restore();
+        };
+        for (let i = 0; i < this.maxCollage; i++) {
+            const img = new window.Image();
+            img.onload = () => {
+                imageEls[i] = img;
+                loadedImgs++;
+                if (loadedImgs === this.maxCollage) {
+                    for (let j = 0; j < this.maxCollage; j++) {
+                        const [x, y] = positions[j];
+                        drawFramedImage(imageEls[j], x, y);
+                    }
+                    // Add selected frame on top of the collage
+                    this.addFrameStyling(ctx, collageWidth, collageHeight, this.selectedFrame, true);
+                    this.canvasElement.toBlob((blob) => {
+                        this.capturedPhotoBlob = blob;
+                        const photoURL = URL.createObjectURL(blob);
+                        this.photoResult.src = photoURL;
+                        this.photoResult.onload = () => URL.revokeObjectURL(photoURL);
+                        this.videoElement.style.display = 'none';
+                        this.capturedPhotoDiv.style.display = 'block';
+                        this.printBtn.disabled = false;
+                        this.shareBtn.disabled = false;
+                        this.retakeBtn.style.display = 'block';
+                        this.takePhotoBtn.style.display = 'none';
+                        if (this.collageBtn) this.collageBtn.disabled = false;
+                        if (this.collageProgress) this.collageProgress.style.display = 'none';
+                        if (this.toggleVideoSizeBtn) this.toggleVideoSizeBtn.disabled = false;
+                        if (this.framePicker) this.framePicker.style.display = 'block';
+                        this.isCollageMode = false;
+                        this.collagePhotos = [];
+                        this.collageStep = 0;
+                    }, 'image/jpeg', 0.9);
+                }
+            };
+            img.src = URL.createObjectURL(this.collagePhotos[i]);
+        }
     }
 
     showCollageProgress() {
@@ -380,153 +479,128 @@ class PhotoboothApp {
         this.collageProgress.style.display = 'block';
     }
 
-    assembleCollage() {
-        // Set up a 2x2 grid, each with an Instax-style frame
-        const singleWidth = 400; // 4:3
-        const singleHeight = 300;
-        const collageWidth = singleWidth * 2 + 40;   // 20px padding between
-        const collageHeight = singleHeight * 2 + 40;
-
-        this.canvasElement.width = collageWidth;
-        this.canvasElement.height = collageHeight;
-        const ctx = this.canvasElement.getContext('2d');
-
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, collageWidth, collageHeight);
-
-        // For each photo, draw it into the correct quadrant with a border/frame
-        const positions = [
-            [0, 0], [singleWidth + 40, 0],
-            [0, singleHeight + 40], [singleWidth + 40, singleHeight + 40]
-        ];
-
-        let loadedImgs = 0;
-        const imageEls = [];
-
-        // Utility to draw the Instax frame for each
-        const drawFramedImage = (img, ix, iy) => {
-            // Draw white frame
-            ctx.save();
-            ctx.fillStyle = "#fff";
-            ctx.fillRect(ix, iy, singleWidth, singleHeight);
-            // Draw image inside with 12px padding
-            ctx.drawImage(img, ix + 12, iy + 12, singleWidth - 24, singleHeight - 36); // Bottom padding for branding
-            // Add simple border
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(ix + 12, iy + 12, singleWidth - 24, singleHeight - 36);
-            // Branding
-            ctx.fillStyle = '#666666';
-            ctx.font = 'bold 14px Arial';
-            ctx.textAlign = 'right';
-            ctx.fillText('INSTAX', ix + singleWidth - 18, iy + singleHeight - 12);
-            ctx.restore();
-        };
-
-        // Load all blobs as images
-        for (let i = 0; i < this.maxCollage; i++) {
-            const img = new window.Image();
-            img.onload = () => {
-                imageEls[i] = img;
-                loadedImgs++;
-                if (loadedImgs === this.maxCollage) {
-                    // Draw all onto the collage canvas
-                    for (let j = 0; j < this.maxCollage; j++) {
-                        const [x, y] = positions[j];
-                        drawFramedImage(imageEls[j], x, y);
-                    }
-                    // Output as one photo
-                    this.canvasElement.toBlob((blob) => {
-                        this.capturedPhotoBlob = blob;
-                        const photoURL = URL.createObjectURL(blob);
-                        this.photoResult.src = photoURL;
-                        this.photoResult.onload = () => URL.revokeObjectURL(photoURL);
-
-                        // Show result, enable buttons
-                        this.videoElement.style.display = 'none';
-                        this.capturedPhotoDiv.style.display = 'block';
-                        this.printBtn.disabled = false;
-                        this.shareBtn.disabled = false;
-                        this.retakeBtn.style.display = 'block';
-                        this.takePhotoBtn.style.display = 'none';
-                        if (this.collageBtn) this.collageBtn.disabled = false;
-                        if (this.collageProgress) this.collageProgress.style.display = 'none';
-                        // Reset collage state
-                        this.isCollageMode = false;
-                        this.collagePhotos = [];
-                        this.collageStep = 0;
-                    }, 'image/jpeg', 0.9);
-                }
-            };
-            img.src = URL.createObjectURL(this.collagePhotos[i]);
+    // Dynamically draw frame based on user selection
+    addFrameStyling(ctx, width, height, frameId, isCollage = false) {
+        switch (frameId) {
+            case 'instax':
+            default:
+                // Instax style
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(20, 20, width - 40, height - 80);
+                ctx.fillStyle = '#666666';
+                ctx.font = 'bold 16px Arial';
+                ctx.letterSpacing = '2px';
+                ctx.textAlign = 'right';
+                ctx.fillText('INSTAX', width - 25, height - 20);
+                break;
+            case 'polaroid':
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(0, 0, width, height);
+                ctx.strokeStyle = '#222';
+                ctx.lineWidth = 8;
+                ctx.strokeRect(0, 0, width, height);
+                ctx.fillStyle = '#222';
+                ctx.font = 'bold 24px Courier';
+                ctx.textAlign = 'center';
+                ctx.fillText('Polaroid', width / 2, height - 18);
+                break;
+            case 'simple-black':
+                ctx.strokeStyle = '#222';
+                ctx.lineWidth = 20;
+                ctx.strokeRect(0, 0, width, height);
+                break;
+            case 'gold':
+                ctx.strokeStyle = '#FFD700';
+                ctx.lineWidth = 18;
+                ctx.strokeRect(0, 0, width, height);
+                ctx.shadowColor = '#FFD700';
+                ctx.shadowBlur = 12;
+                break;
+            case 'rainbow':
+                var grad = ctx.createLinearGradient(0, 0, width, height);
+                grad.addColorStop(0, "#ff5e62");
+                grad.addColorStop(0.25, "#ff9966");
+                grad.addColorStop(0.5, "#f5f7b2");
+                grad.addColorStop(0.75, "#8fd3f4");
+                grad.addColorStop(1, "#84fab0");
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = 14;
+                ctx.strokeRect(8, 8, width - 16, height - 16);
+                break;
+            case 'retro':
+                ctx.strokeStyle = '#d35400';
+                ctx.lineWidth = 14;
+                ctx.strokeRect(12, 12, width - 24, height - 24);
+                ctx.setLineDash([10, 10]);
+                ctx.strokeStyle = '#27ae60';
+                ctx.lineWidth = 6;
+                ctx.strokeRect(26, 26, width - 52, height - 52);
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#d35400';
+                ctx.font = 'bold 18px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText('RETRO', 32, height - 16);
+                break;
+            case 'neon':
+                ctx.shadowColor = '#00FFC6';
+                ctx.shadowBlur = 20;
+                ctx.strokeStyle = '#00FFC6';
+                ctx.lineWidth = 10;
+                ctx.strokeRect(6, 6, width - 12, height - 12);
+                ctx.shadowBlur = 0;
+                break;
+            case 'minimal':
+                ctx.strokeStyle = '#aaa';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(20, 20, width - 40, height - 40);
+                break;
+            case 'funky':
+                ctx.strokeStyle = '#8e44ad';
+                ctx.lineWidth = 12;
+                ctx.setLineDash([6, 8]);
+                ctx.strokeRect(10, 10, width - 20, height - 20);
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#e84393';
+                ctx.font = 'bold 16px Comic Sans MS, cursive';
+                ctx.textAlign = 'center';
+                ctx.fillText('FUNKY!', width / 2, 35);
+                break;
         }
-    }
-
-    addInstaxFrameStyling(ctx, width, height) {
-        // Add subtle inner border
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(20, 20, width - 40, height - 80);
-
-        // Add INSTAX branding
-        ctx.fillStyle = '#666666';
-        ctx.font = 'bold 16px Arial';
-        ctx.letterSpacing = '2px';
-        ctx.textAlign = 'right';
-        ctx.fillText('INSTAX', width - 25, height - 20);
-
-        // Add subtle shadow effect around the frame
-        const gradient = ctx.createLinearGradient(0, 0, width, height);
-        gradient.addColorStop(0, 'rgba(0, 0, 0, 0.05)');
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.1)');
-
-        // Draw shadow border
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(1, 1, width - 2, height - 2);
     }
 
     createFlashEffect() {
         const flash = document.createElement('div');
         flash.className = 'flash-effect';
         document.body.appendChild(flash);
-
         setTimeout(() => {
             document.body.removeChild(flash);
         }, 300);
     }
 
     retakePhoto() {
-        // Hide captured photo, show video
         this.capturedPhotoDiv.style.display = 'none';
         this.videoElement.style.display = 'block';
-
-        // Reset buttons
         this.printBtn.disabled = true;
         this.shareBtn.disabled = true;
         this.retakeBtn.style.display = 'none';
         this.takePhotoBtn.style.display = 'block';
-
-        // Clear captured photo data
         this.capturedPhotoBlob = null;
         this.photoResult.src = '';
-
-        // Reset collage state if in use
         this.isCollageMode = false;
         this.collagePhotos = [];
         this.collageStep = 0;
         if (this.collageProgress) this.collageProgress.style.display = 'none';
         if (this.collageBtn) this.collageBtn.disabled = false;
+        if (this.toggleVideoSizeBtn) this.toggleVideoSizeBtn.disabled = false;
+        if (this.framePicker) this.framePicker.style.display = 'none';
     }
 
     async printPhoto() {
         if (!this.capturedPhotoBlob) return;
-
         try {
-            // Create a new window for printing
             const printWindow = window.open('', '_blank');
             const photoURL = URL.createObjectURL(this.capturedPhotoBlob);
-
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
@@ -559,9 +633,7 @@ class PhotoboothApp {
                 </body>
                 </html>
             `);
-
             printWindow.document.close();
-
         } catch (error) {
             console.error('Error printing photo:', error);
             alert('Failed to print photo. Please try again.');
@@ -570,14 +642,11 @@ class PhotoboothApp {
 
     async sharePhoto() {
         if (!this.capturedPhotoBlob) return;
-
         try {
-            // Check if Web Share API is supported
             if (navigator.share && navigator.canShare) {
                 const file = new File([this.capturedPhotoBlob], 'photobooth-photo.jpg', {
                     type: 'image/jpeg'
                 });
-
                 if (navigator.canShare({ files: [file] })) {
                     await navigator.share({
                         title: 'Photobooth Photo',
@@ -587,8 +656,6 @@ class PhotoboothApp {
                     return;
                 }
             }
-
-            // Fallback: Download the photo
             const photoURL = URL.createObjectURL(this.capturedPhotoBlob);
             const link = document.createElement('a');
             link.href = photoURL;
@@ -597,7 +664,6 @@ class PhotoboothApp {
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(photoURL);
-
         } catch (error) {
             console.error('Error sharing photo:', error);
             alert('Failed to share photo. The photo has been downloaded instead.');
@@ -605,7 +671,6 @@ class PhotoboothApp {
     }
 
     handleOrientationChange() {
-        // Reinitialize camera after orientation change
         if (this.stream) {
             setTimeout(() => {
                 this.initializeCamera();
@@ -613,7 +678,6 @@ class PhotoboothApp {
         }
     }
 
-    // Cleanup method
     destroy() {
         if (this.stream) {
             this.stream.getTracks().forEach(track => track.stop());
@@ -621,9 +685,7 @@ class PhotoboothApp {
     }
 }
 
-// Initialize the photobooth app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Check for required APIs
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         document.body.innerHTML = `
             <div style="display: flex; align-items: center; justify-content: center; height: 100vh; background: #f8f9fa; color: #d63031; text-align: center; padding: 20px; font-family: Arial, sans-serif;">
@@ -635,19 +697,15 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         return;
     }
-
-    // Initialize the photobooth
     window.photoboothApp = new PhotoboothApp();
 });
 
-// Handle page unload
 window.addEventListener('beforeunload', () => {
     if (window.photoboothApp) {
         window.photoboothApp.destroy();
     }
 });
 
-// Handle errors globally
 window.addEventListener('error', (event) => {
     console.error('Global error:', event.error);
 });

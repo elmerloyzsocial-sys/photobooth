@@ -12,23 +12,29 @@
         <div class="camera-section">
             <div class="instax-frame">
                 <video
-id="camera-feed"
-autoplay
-playsinline
-></video>
+                    id="camera-feed"
+                    autoplay
+                    playsinline
+                    class="normal-size"
+                ></video>
                 <canvas id="photo-canvas" style="display: none;"></canvas>
                 <div
-id="captured-photo"
-class="captured-photo"
-style="display: none;"
->
+                    id="captured-photo"
+                    class="captured-photo"
+                    style="display: none;"
+                >
                     <img id="photo-result" alt="Captured photo">
                 </div>
+                <!-- Frame picker UI -->
+                <div id="frame-picker" class="frame-picker" style="display: none;">
+                    <div id="frame-picker-inner" class="frame-picker-inner"></div>
+                    <div class="frame-picker-label">Choose a frame</div>
+                </div>
                 <div
-id="countdown-overlay"
-class="countdown-overlay"
-style="display: none;"
->
+                    id="countdown-overlay"
+                    class="countdown-overlay"
+                    style="display: none;"
+                >
                     <span id="countdown-number">3</span>
                 </div>
             </div>
@@ -58,43 +64,53 @@ style="display: none;"
                     <span>📸</span>
                     Take Photo
                 </button>
-				
-																<!-- Collage Button -->
+                
+                <!-- Collage Button -->
                 <button id="collage-mode" class="control-btn collage-mode">
                     <span>🧩</span>
-                    <span class="text-sm mt-1">Collage (4-Photo)</span>
+                    <span class="text-sm mt-1">Collage</span>
                 </button>
                 <div id="collage-progress" class="hidden text-center font-bold text-gray-700 col-span-2 mt-2">
                 </div>
-																
-																	<!-- Print Button -->
+                
+                <!-- Print Button -->
                 <button
-id="print-photo"
-class="control-btn print-btn"
-disabled
->
+                    id="print-photo"
+                    class="control-btn print-btn"
+                    disabled
+                >
                     <span>🖨️</span>
                     Print
                 </button>
 
                 <!-- Share Button -->
                 <button
-id="share-photo"
-class="control-btn share-btn"
-disabled
->
+                    id="share-photo"
+                    class="control-btn share-btn"
+                    disabled
+                >
                     <span>📤</span>
                     Share
                 </button>
 
                 <!-- Retake Button -->
                 <button
-id="retake-photo"
-class="control-btn retake-btn"
-style="display: none;"
->
+                    id="retake-photo"
+                    class="control-btn retake-btn"
+                    style="display: none;"
+                >
                     <span>🔄</span>
                     Retake
+                </button>
+
+                <!-- Toggle Video Size Button -->
+                <button
+                    id="toggle-video-size"
+                    class="control-btn toggle-size-btn"
+                    type="button"
+                >
+                    <span>🔍</span>
+                    Toggle Video Size
                 </button>
             </div>
         </div>

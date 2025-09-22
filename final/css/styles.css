@@ -73,6 +73,51 @@ body {
     background: #f0f0f0;
 }
 
+/* --- Video size toggle styles --- */
+#camera-feed.normal-size {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    transition: width 0.3s, height 0.3s;
+}
+
+#camera-feed.large-size {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 120vw;
+    height: 120vh;
+    max-width: none;
+    max-height: none;
+    z-index: 20;
+    border-radius: 0;
+    background: #000;
+    transition: width 0.3s, height 0.3s;
+    box-shadow: 0 0 40px 10px rgba(0,0,0,0.5);
+}
+
+@media (max-width: 768px) {
+    #camera-feed.large-size {
+        width: 100vw;
+        height: 100vh;
+    }
+}
+
+#camera-feed.large-size {
+    pointer-events: auto;
+}
+
+#camera-feed.large-size::after {
+    content: '';
+    display: block;
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.5);
+    z-index: 19;
+}
+/* --- END video size toggle styles --- */
+
 #photo-canvas {
     position: absolute;
     top: 20px;
@@ -89,6 +134,63 @@ body {
     height: calc(100% - 80px);
     border-radius: 4px;
     overflow: hidden;
+    z-index: 2;
+}
+
+/* Frame picker styles */
+.frame-picker {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    z-index: 5;
+}
+
+.frame-picker-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 6px;
+    justify-content: center;
+}
+
+.frame-thumb {
+    background: #fff;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: border 0.2s, background 0.2s;
+    min-width: 55px;
+    min-height: 45px;
+    outline: none;
+}
+.frame-thumb.selected {
+    border: 2.5px solid #6c5ce7;
+    background: #eef;
+}
+.frame-thumb:hover {
+    border: 2px solid #00b894;
+    background: #f9f9f9;
+}
+.frame-icon {
+    font-size: 22px;
+}
+.frame-name {
+    font-size: 10px;
+    color: #333;
+    margin-top: 2px;
+}
+.frame-picker-label {
+    font-size: 12px;
+    color: #555;
+    text-align: center;
+    margin-top: 0;
 }
 
 /* Countdown overlay */
@@ -282,6 +384,18 @@ body {
     background: linear-gradient(135deg, #6c5ce7, #a29bfe);
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(162, 155, 254, 0.6);
+}
+
+/* Toggle Video Size Button */
+.toggle-size-btn {
+    background: linear-gradient(135deg, #ffe082 40%, #ffd600 100%);
+    color: #333;
+    box-shadow: 0 4px 15px rgba(255, 214, 0, 0.15);
+}
+.toggle-size-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #ffd600 40%, #ffe082 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 214, 0, 0.3);
 }
 
 /* Responsive adjustments for different tablet sizes */
