@@ -53,8 +53,8 @@ body {
 
 /* Intax frame normal to large size */
 .instax-frame.normal-size {
-    width: 600px;
-    height: 450px;
+    width: 1024px;
+    height: 768px;
     transition: width 0.3s, height 0.3s;
 }
 .instax-frame.large-size {
