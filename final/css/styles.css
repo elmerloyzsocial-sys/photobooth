@@ -51,7 +51,6 @@ body {
     justify-content: center;
 }
 
-/* Toggle video size: just make video larger INSIDE instax-frame */
 #camera-feed.normal-size {
     width: 100%;
     height: 100%;
@@ -381,6 +380,55 @@ body {
     background: linear-gradient(135deg, #ffd600 40%, #ffe082 100%);
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(255, 214, 0, 0.3);
+}
+
+.download-gallery-btn {
+    background: linear-gradient(135deg, #81ecec, #00b894);
+    color: #222;
+    box-shadow: 0 4px 15px rgba(0, 184, 148, 0.15);
+}
+.download-gallery-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #00b894, #81ecec);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 184, 148, 0.2);
+}
+
+/* Gallery styles (thumbnails) */
+.photo-gallery {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100vw;
+    background: rgba(255,255,255,0.98);
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    padding: 12px 5vw;
+    box-shadow: 0 -2px 20px #667eea44;
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+}
+.photo-gallery .gallery-thumb {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.photo-gallery img {
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 5px;
+    border: 2px solid #ccc;
+    background: #fff;
+}
+.photo-gallery a {
+    display: block;
+    font-size: 12px;
+    color: #2980b9;
+    text-decoration: underline;
+    margin-top: 2px;
 }
 
 /* Responsive adjustments for tablet/mobile */
