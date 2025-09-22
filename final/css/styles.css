@@ -71,8 +71,8 @@ body {
     transition: width 0.3s, height 0.3s;
 }
 #camera-feed.large-size {
-    width: 130%;
-    height: 130%;
+    width: 110%;
+    height: 110%;
     max-width: none;
     max-height: none;
     z-index: 1;
