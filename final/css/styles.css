@@ -51,6 +51,18 @@ body {
     justify-content: center;
 }
 
+/* Intax frame normal to large size */
+.instax-frame.normal-size {
+    width: 600px;
+    height: 450px;
+    transition: width 0.3s, height 0.3s;
+}
+.instax-frame.large-size {
+    width: 780px; /* 30% increase */
+    height: 585px;
+    transition: width 0.3s, height 0.3s;
+}
+
 #camera-feed.normal-size {
     width: 100%;
     height: 100%;

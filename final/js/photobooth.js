@@ -17,6 +17,7 @@ class PhotoboothApp {
 
     initializeElements() {
         this.videoElement = document.getElementById('camera-feed');
+		this.instaxFrame = document.querySelector('.instax-frame');
         this.canvasElement = document.getElementById('photo-canvas');
         this.photoResult = document.getElementById('photo-result');
         this.capturedPhotoDiv = document.getElementById('captured-photo');
@@ -147,17 +148,21 @@ class PhotoboothApp {
     }
 
     toggleVideoSize() {
-        this.isLargeVideo = !this.isLargeVideo;
-        if (this.isLargeVideo) {
-            this.videoElement.classList.remove('normal-size');
-            this.videoElement.classList.add('large-size');
-            this.toggleVideoSizeBtn.textContent = '🔍 Shrink Video';
-        } else {
-            this.videoElement.classList.remove('large-size');
-            this.videoElement.classList.add('normal-size');
-            this.toggleVideoSizeBtn.textContent = '🔍 Toggle Video Size';
-        }
+		this.isLargeVideo = !this.isLargeVideo;
+		if (this.isLargeVideo) {
+			this.videoElement.classList.remove('normal-size');
+			this.videoElement.classList.add('large-size');
+			this.instaxFrame.classList.remove('normal-size');
+			this.instaxFrame.classList.add('large-size');
+			this.toggleVideoSizeBtn.textContent = '🔍 Shrink Video';
+		} 	else {
+			this.videoElement.classList.remove('large-size');
+			this.videoElement.classList.add('normal-size');
+			this.instaxFrame.classList.remove('large-size');
+			this.instaxFrame.classList.add('normal-size');
+			this.toggleVideoSizeBtn.textContent = '🔍 Toggle Video Size';
     }
+	}
 
     // --- Main photo sequence logic ---
     async startPhotoSequence() {
