@@ -59,20 +59,12 @@
                     Switch Camera
                 </button>
 
-                <!-- Take Photo -->
+                <!-- Take Photo (now takes 4 in a row) -->
                 <button id="take-photo" class="control-btn take-photo">
                     <span>📸</span>
-                    Take Photo
+                    Take 4 Photos
                 </button>
-                
-                <!-- Collage Button -->
-                <button id="collage-mode" class="control-btn collage-mode">
-                    <span>🧩</span>
-                    <span class="text-sm mt-1">Collage</span>
-                </button>
-                <div id="collage-progress" class="hidden text-center font-bold text-gray-700 col-span-2 mt-2">
-                </div>
-                
+
                 <!-- Print Button -->
                 <button
                     id="print-photo"
@@ -112,9 +104,22 @@
                     <span>🔍</span>
                     Toggle Video Size
                 </button>
+
+                <!-- Gallery Download Button -->
+                <button
+                    id="download-gallery"
+                    class="control-btn download-gallery-btn"
+                    style="display: none;"
+                >
+                    <span>💾</span>
+                    Save All Photos
+                </button>
             </div>
         </div>
     </div>
+
+    <!-- Gallery Thumbnails -->
+    <div id="photo-gallery" class="photo-gallery" style="display: none;"></div>
 
     <script src="js/photobooth.js"></script>
 </body>
