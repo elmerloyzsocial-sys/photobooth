@@ -6,9 +6,8 @@ class PhotoboothApp {
         this.isCountingDown = false;
         this.isLargeVideo = false;
 
-        // Remove frame selection state
-        this.capturedPhotoBlobs = []; // Array of 4 photo blobs
-        this.currentPhotoIndex = 0; // Which photo is shown/previewed
+        this.capturedPhotoBlobs = [];
+        this.currentPhotoIndex = 0;
 
         this.initializeElements();
         this.bindEvents();
@@ -17,7 +16,7 @@ class PhotoboothApp {
 
     initializeElements() {
         this.videoElement = document.getElementById('camera-feed');
-		this.instaxFrame = document.querySelector('.instax-frame');
+        this.instaxFrame = document.querySelector('.instax-frame');
         this.canvasElement = document.getElementById('photo-canvas');
         this.photoResult = document.getElementById('photo-result');
         this.capturedPhotoDiv = document.getElementById('captured-photo');
@@ -32,7 +31,6 @@ class PhotoboothApp {
         this.shareBtn = document.getElementById('share-photo');
         this.retakeBtn = document.getElementById('retake-photo');
         this.toggleVideoSizeBtn = document.getElementById('toggle-video-size');
-        // Remove framePicker and framePickerInner
         this.downloadGalleryBtn = document.getElementById('download-gallery');
         this.photoGallery = document.getElementById('photo-gallery');
     }
@@ -47,7 +45,6 @@ class PhotoboothApp {
         this.shareBtn.addEventListener('click', () => this.sharePhoto());
         this.toggleVideoSizeBtn.addEventListener('click', () => this.toggleVideoSize());
         this.downloadGalleryBtn.addEventListener('click', () => this.downloadGallery());
-        // Remove frame picker UI events
         window.addEventListener('orientationchange', () => setTimeout(() => this.handleOrientationChange(), 500));
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && !this.stream) {
@@ -94,16 +91,24 @@ class PhotoboothApp {
             });
             this.videoElement.style.display = 'block';
             this.capturedPhotoDiv.style.display = 'none';
-            // Remove framePicker
             this.photoGallery.style.display = 'none';
             this.downloadGalleryBtn.style.display = 'none';
             this.enableCameraControls();
+            // Apply correct frame size class
             if (this.isLargeVideo) {
                 this.videoElement.classList.remove('normal-size');
                 this.videoElement.classList.add('large-size');
+                if (this.instaxFrame) {
+                    this.instaxFrame.classList.remove('normal-size');
+                    this.instaxFrame.classList.add('large-size');
+                }
             } else {
                 this.videoElement.classList.remove('large-size');
                 this.videoElement.classList.add('normal-size');
+                if (this.instaxFrame) {
+                    this.instaxFrame.classList.remove('large-size');
+                    this.instaxFrame.classList.add('normal-size');
+                }
             }
         } catch (error) {
             this.handleCameraError(error);
@@ -148,21 +153,25 @@ class PhotoboothApp {
     }
 
     toggleVideoSize() {
-		this.isLargeVideo = !this.isLargeVideo;
-		if (this.isLargeVideo) {
-			this.videoElement.classList.remove('normal-size');
-			this.videoElement.classList.add('large-size');
-			this.instaxFrame.classList.remove('normal-size');
-			this.instaxFrame.classList.add('large-size');
-			this.toggleVideoSizeBtn.textContent = '🔍 Shrink Video';
-		} 	else {
-			this.videoElement.classList.remove('large-size');
-			this.videoElement.classList.add('normal-size');
-			this.instaxFrame.classList.remove('large-size');
-			this.instaxFrame.classList.add('normal-size');
-			this.toggleVideoSizeBtn.textContent = '🔍 Toggle Video Size';
+        this.isLargeVideo = !this.isLargeVideo;
+        if (this.isLargeVideo) {
+            this.videoElement.classList.remove('normal-size');
+            this.videoElement.classList.add('large-size');
+            if (this.instaxFrame) {
+                this.instaxFrame.classList.remove('normal-size');
+                this.instaxFrame.classList.add('large-size');
+            }
+            this.toggleVideoSizeBtn.textContent = '🔍 Shrink Video';
+        } else {
+            this.videoElement.classList.remove('large-size');
+            this.videoElement.classList.add('normal-size');
+            if (this.instaxFrame) {
+                this.instaxFrame.classList.remove('large-size');
+                this.instaxFrame.classList.add('normal-size');
+            }
+            this.toggleVideoSizeBtn.textContent = '🔍 Toggle Video Size';
+        }
     }
-	}
 
     // --- Main photo sequence logic ---
     async startPhotoSequence() {
@@ -270,7 +279,6 @@ class PhotoboothApp {
         if (!this.capturedPhotoBlobs[idx]) return;
         this.capturedPhotoDiv.style.display = 'block';
         this.videoElement.style.display = 'none';
-        // Remove framePicker
         this.photoGallery.style.display = 'flex';
         const photoURL = URL.createObjectURL(this.capturedPhotoBlobs[idx]);
         this.photoResult.src = photoURL;
@@ -325,13 +333,11 @@ class PhotoboothApp {
 
     // --- Frame Drawing: Only the "Thank You" frame style remains ---
     addThankYouFrame(ctx, width, height) {
-        // Simple white frame with a thin border and thank you text on bottom right
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
         ctx.lineWidth = 1;
         ctx.strokeRect(20, 20, width - 40, height - 80);
         ctx.fillStyle = '#666666';
         ctx.font = 'bold 20px Arial';
-        // ctx.letterSpacing does not exist on canvas; ignore
         ctx.textAlign = 'right';
         ctx.fillText('Thank you for celebrating with us', width - 25, height - 20);
     }
@@ -350,7 +356,6 @@ class PhotoboothApp {
         this.currentPhotoIndex = 0;
         this.capturedPhotoDiv.style.display = 'none';
         this.videoElement.style.display = 'block';
-        // Remove framePicker
         this.photoGallery.style.display = 'none';
         this.downloadGalleryBtn.style.display = 'none';
         this.printBtn.disabled = true;
@@ -445,7 +450,7 @@ class PhotoboothApp {
 document.addEventListener('DOMContentLoaded', () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         document.body.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; background: #f8f9fa; color: #d63031; text-align: center; padding: 20px; font-family: Arial, sans-ser[...]
+            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; background: #f8f9fa; color: #d63031; text-align: center; padding: 20px; font-family: Arial, sans-serif;">
                 <div>
                     <h2>Camera Not Supported</h2>
                     <p>This browser doesn't support camera access. Please use a modern browser like Chrome, Firefox, or Safari.</p>
