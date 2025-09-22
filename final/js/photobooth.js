@@ -1,18 +1,9 @@
 class PhotoboothApp {
     constructor() {
         this.stream = null;
-        this.currentCamera = 'user'; // 'user' for front, 'environment' for back
+        this.currentCamera = 'user';
         this.timerSeconds = 3;
         this.isCountingDown = false;
-        this.capturedPhotoBlob = null;
-
-        // Collage state
-        this.isCollageMode = false;
-        this.collagePhotos = [];
-        this.collageStep = 0;
-        this.maxCollage = 4;
-
-        // Video size state
         this.isLargeVideo = false;
 
         // Frame selection state
@@ -29,73 +20,49 @@ class PhotoboothApp {
         ];
         this.selectedFrame = 'instax';
 
+        this.capturedPhotoBlobs = []; // Array of 4 photo blobs
+        this.currentPhotoIndex = 0; // Which photo is shown/previewed
+
         this.initializeElements();
         this.bindEvents();
         this.initializeCamera();
     }
 
     initializeElements() {
-        // Camera elements
         this.videoElement = document.getElementById('camera-feed');
         this.canvasElement = document.getElementById('photo-canvas');
         this.photoResult = document.getElementById('photo-result');
         this.capturedPhotoDiv = document.getElementById('captured-photo');
-
-        // Countdown elements
         this.countdownOverlay = document.getElementById('countdown-overlay');
         this.countdownNumber = document.getElementById('countdown-number');
-
-        // Timer controls
         this.timerDisplay = document.getElementById('timer-display');
         this.timerDecrease = document.getElementById('timer-decrease');
         this.timerIncrease = document.getElementById('timer-increase');
-
-        // Control buttons
         this.switchCameraBtn = document.getElementById('switch-camera');
         this.takePhotoBtn = document.getElementById('take-photo');
         this.printBtn = document.getElementById('print-photo');
         this.shareBtn = document.getElementById('share-photo');
         this.retakeBtn = document.getElementById('retake-photo');
-
-        // Collage button & progress overlay
-        this.collageBtn = document.getElementById('collage-mode');
-        this.collageProgress = document.getElementById('collage-progress');
-
-        // Toggle video size button
         this.toggleVideoSizeBtn = document.getElementById('toggle-video-size');
-
-        // Frame picker UI
         this.framePicker = document.getElementById('frame-picker');
         this.framePickerInner = document.getElementById('frame-picker-inner');
+        this.downloadGalleryBtn = document.getElementById('download-gallery');
+        this.photoGallery = document.getElementById('photo-gallery');
     }
 
     bindEvents() {
-        // Timer controls
         this.timerDecrease.addEventListener('click', () => this.adjustTimer(-1));
         this.timerIncrease.addEventListener('click', () => this.adjustTimer(1));
-
-        // Camera controls
         this.switchCameraBtn.addEventListener('click', () => this.switchCamera());
-        this.takePhotoBtn.addEventListener('click', () => this.startCountdown());
-        this.retakeBtn.addEventListener('click', () => this.retakePhoto());
-
-        // Photo actions
+        this.takePhotoBtn.addEventListener('click', () => this.startPhotoSequence());
+        this.retakeBtn.addEventListener('click', () => this.retakePhotos());
         this.printBtn.addEventListener('click', () => this.printPhoto());
         this.shareBtn.addEventListener('click', () => this.sharePhoto());
-
-        // Collage mode
-        if (this.collageBtn) {
-            this.collageBtn.addEventListener('click', () => this.startCollageMode());
-        }
-
-        // Toggle video size
-        if (this.toggleVideoSizeBtn) {
-            this.toggleVideoSizeBtn.addEventListener('click', () => this.toggleVideoSize());
-        }
-
+        this.toggleVideoSizeBtn.addEventListener('click', () => this.toggleVideoSize());
+        this.downloadGalleryBtn.addEventListener('click', () => this.downloadGallery());
         // Frame picker
         if (this.framePickerInner) {
-            this.frameStyles.forEach(frame => {
+            this.frameStyles.forEach((frame, idx) => {
                 const btn = document.createElement('button');
                 btn.className = 'frame-thumb';
                 btn.dataset.frame = frame.id;
@@ -106,11 +73,7 @@ class PhotoboothApp {
                 this.framePickerInner.appendChild(btn);
             });
         }
-
-        // Handle orientation/visibility
-        window.addEventListener('orientationchange', () => {
-            setTimeout(() => this.handleOrientationChange(), 500);
-        });
+        window.addEventListener('orientationchange', () => setTimeout(() => this.handleOrientationChange(), 500));
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && !this.stream) {
                 this.initializeCamera();
@@ -118,78 +81,21 @@ class PhotoboothApp {
         });
     }
 
-    selectFrame(frameId) {
-        if (!this.frameStyles.some(f => f.id === frameId)) return;
-        this.selectedFrame = frameId;
-        // update selected class
-        if (this.framePickerInner) {
-            Array.from(this.framePickerInner.children).forEach(btn => {
-                btn.classList.toggle('selected', btn.dataset.frame === frameId);
-            });
-        }
-        // re-draw photo with the new frame if a photo exists
-        if (this.capturedPhotoBlob) {
-            this.applyFrameToPhoto();
-        }
-    }
-
-    // Re-generate the photoResult image with the selected frame
-    applyFrameToPhoto() {
-        // We'll need to re-draw the last captured photo or collage with the new frame
-        // The easiest way: redraw the canvas, then display the new result
-
-        // For single photo, the last frame is in the canvas
-        // For collage, the raw collage is not kept, so we just update the frame
-        // We'll use the last canvas content, but re-draw the frame.
-
-        // Get the last photo image
-        const img = new window.Image();
-        const prevBlob = this.capturedPhotoBlob;
-        if (!prevBlob) return;
-        img.onload = () => {
-            const ctx = this.canvasElement.getContext('2d');
-            // Redraw the photo
-            this.canvasElement.width = img.width;
-            this.canvasElement.height = img.height;
-            ctx.clearRect(0, 0, img.width, img.height);
-            ctx.drawImage(img, 0, 0, img.width, img.height);
-            // Draw selected frame
-            this.addFrameStyling(ctx, img.width, img.height, this.selectedFrame);
-            // Update preview and blob
-            this.canvasElement.toBlob(blob => {
-                this.capturedPhotoBlob = blob;
-                const photoURL = URL.createObjectURL(blob);
-                this.photoResult.src = photoURL;
-                this.photoResult.onload = () => URL.revokeObjectURL(photoURL);
-            }, 'image/jpeg', 0.9);
-        };
-        img.src = URL.createObjectURL(prevBlob);
-    }
-
-    // Toggle video size function (unchanged)
-    toggleVideoSize() {
-        if (!this.videoElement) return;
-        this.isLargeVideo = !this.isLargeVideo;
-        if (this.isLargeVideo) {
-            this.videoElement.classList.remove('normal-size');
-            this.videoElement.classList.add('large-size');
-            this.toggleVideoSizeBtn.textContent = '🔍 Shrink Video';
-        } else {
-            this.videoElement.classList.remove('large-size');
-            this.videoElement.classList.add('normal-size');
-            this.toggleVideoSizeBtn.textContent = '🔍 Toggle Video Size';
+    adjustTimer(change) {
+        const newTime = this.timerSeconds + change;
+        if (newTime >= 0 && newTime <= 10) {
+            this.timerSeconds = newTime;
+            this.timerDisplay.textContent = this.timerSeconds;
         }
     }
 
     async initializeCamera() {
         try {
-            if (this.stream) {
-                this.stream.getTracks().forEach(track => track.stop());
-            }
+            if (this.stream) this.stream.getTracks().forEach(track => track.stop());
             const devices = await navigator.mediaDevices.enumerateDevices();
             const videoDevices = devices.filter(device => device.kind === 'videoinput');
             if (videoDevices.length === 0) {
-                console.warn('No camera devices found - this is expected in testing environments');
+                console.warn('No camera devices found');
                 this.handleCameraError(new Error('No camera devices found'));
                 return;
             }
@@ -203,14 +109,8 @@ class PhotoboothApp {
             };
             try {
                 this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-            } catch (facingModeError) {
-                constraints = {
-                    video: {
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    },
-                    audio: false
-                };
+            } catch (e) {
+                constraints = { video: true, audio: false };
                 this.stream = await navigator.mediaDevices.getUserMedia(constraints);
             }
             this.videoElement.srcObject = this.stream;
@@ -219,7 +119,9 @@ class PhotoboothApp {
             });
             this.videoElement.style.display = 'block';
             this.capturedPhotoDiv.style.display = 'none';
-            if (this.collageProgress) this.collageProgress.style.display = 'none';
+            this.framePicker.style.display = 'none';
+            this.photoGallery.style.display = 'none';
+            this.downloadGalleryBtn.style.display = 'none';
             this.enableCameraControls();
             if (this.isLargeVideo) {
                 this.videoElement.classList.remove('normal-size');
@@ -229,9 +131,29 @@ class PhotoboothApp {
                 this.videoElement.classList.add('normal-size');
             }
         } catch (error) {
-            console.error('Error accessing camera:', error);
             this.handleCameraError(error);
         }
+    }
+
+    async switchCamera() {
+        if (this.isCountingDown) return;
+        try {
+            this.currentCamera = this.currentCamera === 'user' ? 'environment' : 'user';
+            await this.initializeCamera();
+        } catch (error) {
+            this.currentCamera = this.currentCamera === 'user' ? 'environment' : 'user';
+        }
+    }
+
+    enableCameraControls() {
+        this.switchCameraBtn.disabled = false;
+        this.takePhotoBtn.disabled = false;
+        this.toggleVideoSizeBtn.disabled = false;
+    }
+    disableCameraControls() {
+        this.switchCameraBtn.disabled = true;
+        this.takePhotoBtn.disabled = true;
+        this.toggleVideoSizeBtn.disabled = true;
     }
 
     handleCameraError(error) {
@@ -250,241 +172,215 @@ class PhotoboothApp {
         this.disableCameraControls();
     }
 
-    enableCameraControls() {
-        this.switchCameraBtn.disabled = false;
-        this.takePhotoBtn.disabled = false;
-        if (this.collageBtn) this.collageBtn.disabled = false;
-        if (this.toggleVideoSizeBtn) this.toggleVideoSizeBtn.disabled = false;
-    }
-
-    disableCameraControls() {
-        this.switchCameraBtn.disabled = true;
-        this.takePhotoBtn.disabled = true;
-        if (this.collageBtn) this.collageBtn.disabled = true;
-        if (this.toggleVideoSizeBtn) this.toggleVideoSizeBtn.disabled = true;
-    }
-
-    adjustTimer(change) {
-        const newTime = this.timerSeconds + change;
-        if (newTime >= 0 && newTime <= 10) {
-            this.timerSeconds = newTime;
-            this.timerDisplay.textContent = this.timerSeconds;
+    toggleVideoSize() {
+        this.isLargeVideo = !this.isLargeVideo;
+        if (this.isLargeVideo) {
+            this.videoElement.classList.remove('normal-size');
+            this.videoElement.classList.add('large-size');
+            this.toggleVideoSizeBtn.textContent = '🔍 Shrink Video';
+        } else {
+            this.videoElement.classList.remove('large-size');
+            this.videoElement.classList.add('normal-size');
+            this.toggleVideoSizeBtn.textContent = '🔍 Toggle Video Size';
         }
     }
 
-    async switchCamera() {
+    // --- Main photo sequence logic ---
+    async startPhotoSequence() {
         if (this.isCountingDown) return;
-        try {
-            this.currentCamera = this.currentCamera === 'user' ? 'environment' : 'user';
-            await this.initializeCamera();
-        } catch (error) {
-            console.error('Error switching camera:', error);
-            this.currentCamera = this.currentCamera === 'user' ? 'environment' : 'user';
-        }
-    }
-
-    startCountdown() {
-        if (this.isCountingDown || !this.stream) return;
-        if (this.timerSeconds === 0) {
-            this.capturePhoto();
-            return;
-        }
         this.isCountingDown = true;
-        this.takePhotoBtn.disabled = true;
-        this.switchCameraBtn.disabled = true;
-        if (this.collageBtn) this.collageBtn.disabled = true;
-        if (this.toggleVideoSizeBtn) this.toggleVideoSizeBtn.disabled = true;
-        let countdown = this.timerSeconds;
-        this.countdownNumber.textContent = countdown;
-        this.countdownOverlay.style.display = 'flex';
-        const countdownInterval = setInterval(() => {
-            countdown--;
-            if (countdown > 0) {
-                this.countdownNumber.textContent = countdown;
-                this.countdownNumber.style.animation = 'none';
-                setTimeout(() => {
-                    this.countdownNumber.style.animation = 'countdown-pulse 1s ease-in-out';
-                }, 10);
-            } else {
-                clearInterval(countdownInterval);
-                this.countdownOverlay.style.display = 'none';
-                this.capturePhoto();
-                this.isCountingDown = false;
-                this.takePhotoBtn.disabled = false;
-                this.switchCameraBtn.disabled = false;
-                if (this.collageBtn) this.collageBtn.disabled = false;
-                if (this.toggleVideoSizeBtn) this.toggleVideoSizeBtn.disabled = false;
-            }
-        }, 1000);
-    }
-
-    capturePhoto() {
-        if (!this.stream) return;
-        try {
-            this.createFlashEffect();
-            const video = this.videoElement;
-            const aspectRatio = 4 / 3;
-            const frameWidth = 800;
-            const frameHeight = frameWidth / aspectRatio;
-            this.canvasElement.width = frameWidth;
-            this.canvasElement.height = frameHeight;
-            const ctx = this.canvasElement.getContext('2d');
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, frameWidth, frameHeight);
-            const padding = 20;
-            const bottomPadding = 60;
-            const photoX = padding;
-            const photoY = padding;
-            const photoWidth = frameWidth - (padding * 2);
-            const photoHeight = frameHeight - padding - bottomPadding;
-            const videoAspect = video.videoWidth / video.videoHeight;
-            const photoAspect = photoWidth / photoHeight;
-            let drawWidth, drawHeight, drawX, drawY;
-            if (videoAspect > photoAspect) {
-                drawHeight = photoHeight;
-                drawWidth = drawHeight * videoAspect;
-                drawX = photoX + (photoWidth - drawWidth) / 2;
-                drawY = photoY;
-            } else {
-                drawWidth = photoWidth;
-                drawHeight = drawWidth / videoAspect;
-                drawX = photoX;
-                drawY = photoY + (photoHeight - drawHeight) / 2;
-            }
-            ctx.save();
-            if (this.currentCamera === 'user') {
-                ctx.translate(drawX + drawWidth, drawY);
-                ctx.scale(-1, 1);
-                ctx.drawImage(video, 0, 0, drawWidth, drawHeight);
-            } else {
-                ctx.drawImage(video, drawX, drawY, drawWidth, drawHeight);
-            }
-            ctx.restore();
-            this.addFrameStyling(ctx, frameWidth, frameHeight, this.selectedFrame);
-            if (this.isCollageMode) {
-                this.canvasElement.toBlob((blob) => {
-                    this.collagePhotos.push(blob);
-                    this.collageStep++;
-                    this.showCollageProgress();
-                    if (this.collageStep < this.maxCollage) {
-                        setTimeout(() => {
-                            this.videoElement.style.display = 'block';
-                            this.capturedPhotoDiv.style.display = 'none';
-                        }, 700);
-                    } else {
-                        setTimeout(() => this.assembleCollage(), 700);
-                    }
-                }, 'image/jpeg', 0.9);
-                this.showCollageProgress();
-                return;
-            }
-            this.canvasElement.toBlob((blob) => {
-                this.capturedPhotoBlob = blob;
-                const photoURL = URL.createObjectURL(blob);
-                this.photoResult.src = photoURL;
-                this.photoResult.onload = () => URL.revokeObjectURL(photoURL);
-                this.videoElement.style.display = 'none';
-                this.capturedPhotoDiv.style.display = 'block';
-                this.printBtn.disabled = false;
-                this.shareBtn.disabled = false;
-                this.retakeBtn.style.display = 'block';
-                this.takePhotoBtn.style.display = 'none';
-                if (this.collageBtn) this.collageBtn.disabled = false;
-                if (this.toggleVideoSizeBtn) this.toggleVideoSizeBtn.disabled = false;
-                if (this.framePicker) this.framePicker.style.display = 'block';
-            }, 'image/jpeg', 0.9);
-        } catch (error) {
-            console.error('Error capturing photo:', error);
-            alert('Failed to capture photo. Please try again.');
+        this.disableCameraControls();
+        this.capturedPhotoBlobs = [];
+        this.currentPhotoIndex = 0;
+        const numPhotos = 4;
+        for (let i = 0; i < numPhotos; i++) {
+            await this.runCountdown();
+            await this.capturePhotoToBlob();
+            if (i < numPhotos - 1) await this.wait(600); // Short pause between shots
         }
+        this.isCountingDown = false;
+        this.enableCameraControls();
+        this.currentPhotoIndex = 0;
+        this.showPhoto(this.currentPhotoIndex);
+        this.updateGallery();
+        this.downloadGalleryBtn.style.display = 'inline-flex';
     }
 
-    // Collage Mode: UI and Assembly (4x1 layout)
-    assembleCollage() {
-        const singleWidth = 400;
-        const singleHeight = 300;
-        const collageWidth = singleWidth * 4 + 60;
-        const collageHeight = singleHeight;
-        this.canvasElement.width = collageWidth;
-        this.canvasElement.height = collageHeight;
-        const ctx = this.canvasElement.getContext('2d');
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, collageWidth, collageHeight);
-        const positions = [
-            [0, 0],
-            [singleWidth + 20, 0],
-            [2 * (singleWidth + 20), 0],
-            [3 * (singleWidth + 20), 0]
-        ];
-        let loadedImgs = 0;
-        const imageEls = [];
-        const drawFramedImage = (img, ix, iy) => {
-            ctx.save();
-            ctx.fillStyle = "#fff";
-            ctx.fillRect(ix, iy, singleWidth, singleHeight);
-            ctx.drawImage(img, ix + 12, iy + 12, singleWidth - 24, singleHeight - 36);
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(ix + 12, iy + 12, singleWidth - 24, singleHeight - 36);
-            ctx.fillStyle = '#666666';
-            ctx.font = 'bold 14px Arial';
-            ctx.textAlign = 'right';
-            ctx.fillText('INSTAX', ix + singleWidth - 18, iy + singleHeight - 12);
-            ctx.restore();
-        };
-        for (let i = 0; i < this.maxCollage; i++) {
-            const img = new window.Image();
-            img.onload = () => {
-                imageEls[i] = img;
-                loadedImgs++;
-                if (loadedImgs === this.maxCollage) {
-                    for (let j = 0; j < this.maxCollage; j++) {
-                        const [x, y] = positions[j];
-                        drawFramedImage(imageEls[j], x, y);
-                    }
-                    // Add selected frame on top of the collage
-                    this.addFrameStyling(ctx, collageWidth, collageHeight, this.selectedFrame, true);
-                    this.canvasElement.toBlob((blob) => {
-                        this.capturedPhotoBlob = blob;
-                        const photoURL = URL.createObjectURL(blob);
-                        this.photoResult.src = photoURL;
-                        this.photoResult.onload = () => URL.revokeObjectURL(photoURL);
-                        this.videoElement.style.display = 'none';
-                        this.capturedPhotoDiv.style.display = 'block';
-                        this.printBtn.disabled = false;
-                        this.shareBtn.disabled = false;
-                        this.retakeBtn.style.display = 'block';
-                        this.takePhotoBtn.style.display = 'none';
-                        if (this.collageBtn) this.collageBtn.disabled = false;
-                        if (this.collageProgress) this.collageProgress.style.display = 'none';
-                        if (this.toggleVideoSizeBtn) this.toggleVideoSizeBtn.disabled = false;
-                        if (this.framePicker) this.framePicker.style.display = 'block';
-                        this.isCollageMode = false;
-                        this.collagePhotos = [];
-                        this.collageStep = 0;
-                    }, 'image/jpeg', 0.9);
+    wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    runCountdown() {
+        return new Promise(resolve => {
+            let countdown = this.timerSeconds;
+            if (countdown <= 0) return resolve();
+            this.countdownNumber.textContent = countdown;
+            this.countdownOverlay.style.display = 'flex';
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    this.countdownNumber.textContent = countdown;
+                    this.countdownNumber.style.animation = 'none';
+                    setTimeout(() => {
+                        this.countdownNumber.style.animation = 'countdown-pulse 1s ease-in-out';
+                    }, 10);
+                } else {
+                    clearInterval(countdownInterval);
+                    this.countdownOverlay.style.display = 'none';
+                    resolve();
                 }
-            };
-            img.src = URL.createObjectURL(this.collagePhotos[i]);
-        }
+            }, 1000);
+        });
     }
 
-    showCollageProgress() {
-        if (!this.collageProgress) return;
-        if (!this.isCollageMode) {
-            this.collageProgress.style.display = 'none';
+    capturePhotoToBlob() {
+        return new Promise((resolve, reject) => {
+            try {
+                this.createFlashEffect();
+                const video = this.videoElement;
+                // 4:3 aspect
+                const aspectRatio = 4 / 3;
+                const frameWidth = 800;
+                const frameHeight = frameWidth / aspectRatio;
+                this.canvasElement.width = frameWidth;
+                this.canvasElement.height = frameHeight;
+                const ctx = this.canvasElement.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, frameWidth, frameHeight);
+                const padding = 20, bottomPadding = 60;
+                const photoX = padding, photoY = padding;
+                const photoWidth = frameWidth - (padding * 2);
+                const photoHeight = frameHeight - padding - bottomPadding;
+                const videoAspect = video.videoWidth / video.videoHeight;
+                const photoAspect = photoWidth / photoHeight;
+                let drawWidth, drawHeight, drawX, drawY;
+                if (videoAspect > photoAspect) {
+                    drawHeight = photoHeight;
+                    drawWidth = drawHeight * videoAspect;
+                    drawX = photoX + (photoWidth - drawWidth) / 2;
+                    drawY = photoY;
+                } else {
+                    drawWidth = photoWidth;
+                    drawHeight = drawWidth / videoAspect;
+                    drawX = photoX;
+                    drawY = photoY + (photoHeight - drawHeight) / 2;
+                }
+                ctx.save();
+                if (this.currentCamera === 'user') {
+                    ctx.translate(drawX + drawWidth, drawY);
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(video, 0, 0, drawWidth, drawHeight);
+                } else {
+                    ctx.drawImage(video, drawX, drawY, drawWidth, drawHeight);
+                }
+                ctx.restore();
+                this.addFrameStyling(ctx, frameWidth, frameHeight, this.selectedFrame);
+                this.canvasElement.toBlob(blob => {
+                    this.capturedPhotoBlobs.push(blob);
+                    resolve(blob);
+                }, 'image/jpeg', 0.9);
+            } catch (e) {
+                reject(e);
+            }
+        });
+    }
+
+    // --- Gallery, Preview, and Save ---
+    showPhoto(idx) {
+        if (!this.capturedPhotoBlobs[idx]) return;
+        this.capturedPhotoDiv.style.display = 'block';
+        this.videoElement.style.display = 'none';
+        this.framePicker.style.display = 'block';
+        this.photoGallery.style.display = 'flex';
+        const photoURL = URL.createObjectURL(this.capturedPhotoBlobs[idx]);
+        this.photoResult.src = photoURL;
+        this.photoResult.onload = () => URL.revokeObjectURL(photoURL);
+        this.printBtn.disabled = false;
+        this.shareBtn.disabled = false;
+        this.retakeBtn.style.display = 'block';
+        this.takePhotoBtn.style.display = 'none';
+        // Gallery highlight
+        this.updateGallery(idx);
+    }
+
+    updateGallery(selectedIdx) {
+        if (!this.capturedPhotoBlobs.length) {
+            this.photoGallery.style.display = 'none';
             return;
         }
-        this.collageProgress.textContent = `Collage: Photo ${this.collageStep + 1} of ${this.maxCollage}`;
-        this.collageProgress.style.display = 'block';
+        this.photoGallery.innerHTML = '';
+        this.photoGallery.style.display = 'flex';
+        this.capturedPhotoBlobs.forEach((blob, i) => {
+            const div = document.createElement('div');
+            div.className = 'gallery-thumb';
+            const img = document.createElement('img');
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `photobooth-photo-${i + 1}.jpg`;
+            link.textContent = 'Download';
+            img.src = link.href;
+            img.alt = `Photo ${i + 1}`;
+            img.title = `Photo ${i + 1}`;
+            img.addEventListener('click', () => {
+                this.currentPhotoIndex = i;
+                this.showPhoto(i);
+            });
+            if (selectedIdx === i) img.style.border = '3px solid #6c5ce7';
+            div.appendChild(img);
+            div.appendChild(link);
+            this.photoGallery.appendChild(div);
+        });
     }
 
-    // Dynamically draw frame based on user selection
-    addFrameStyling(ctx, width, height, frameId, isCollage = false) {
+    downloadGallery() {
+        this.capturedPhotoBlobs.forEach((blob, i) => {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `photobooth-photo-${i + 1}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
+    // --- Frame picker ---
+    selectFrame(frameId) {
+        if (!this.frameStyles.some(f => f.id === frameId)) return;
+        this.selectedFrame = frameId;
+        Array.from(this.framePickerInner.children).forEach(btn =>
+            btn.classList.toggle('selected', btn.dataset.frame === frameId)
+        );
+        // Redraw all photo frames
+        this.capturedPhotoBlobs.forEach((blob, idx) => {
+            this.applyFrameToPhoto(blob, idx);
+        });
+        // Show current photo with new frame
+        this.showPhoto(this.currentPhotoIndex);
+    }
+
+    applyFrameToPhoto(blob, idx) {
+        const img = new window.Image();
+        img.onload = () => {
+            const ctx = this.canvasElement.getContext('2d');
+            this.canvasElement.width = img.width;
+            this.canvasElement.height = img.height;
+            ctx.clearRect(0, 0, img.width, img.height);
+            ctx.drawImage(img, 0, 0, img.width, img.height);
+            this.addFrameStyling(ctx, img.width, img.height, this.selectedFrame);
+            this.canvasElement.toBlob(newBlob => {
+                this.capturedPhotoBlobs[idx] = newBlob;
+                // update gallery thumbnail
+                this.updateGallery(this.currentPhotoIndex);
+            }, 'image/jpeg', 0.9);
+        };
+        img.src = URL.createObjectURL(blob);
+    }
+
+    // --- Frame Drawing ---
+    addFrameStyling(ctx, width, height, frameId) {
         switch (frameId) {
             case 'instax':
             default:
-                // Instax style
                 ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
                 ctx.lineWidth = 1;
                 ctx.strokeRect(20, 20, width - 40, height - 80);
@@ -578,29 +474,26 @@ class PhotoboothApp {
         }, 300);
     }
 
-    retakePhoto() {
+    retakePhotos() {
+        this.capturedPhotoBlobs = [];
+        this.currentPhotoIndex = 0;
         this.capturedPhotoDiv.style.display = 'none';
         this.videoElement.style.display = 'block';
+        this.framePicker.style.display = 'none';
+        this.photoGallery.style.display = 'none';
+        this.downloadGalleryBtn.style.display = 'none';
         this.printBtn.disabled = true;
         this.shareBtn.disabled = true;
         this.retakeBtn.style.display = 'none';
         this.takePhotoBtn.style.display = 'block';
-        this.capturedPhotoBlob = null;
-        this.photoResult.src = '';
-        this.isCollageMode = false;
-        this.collagePhotos = [];
-        this.collageStep = 0;
-        if (this.collageProgress) this.collageProgress.style.display = 'none';
-        if (this.collageBtn) this.collageBtn.disabled = false;
-        if (this.toggleVideoSizeBtn) this.toggleVideoSizeBtn.disabled = false;
-        if (this.framePicker) this.framePicker.style.display = 'none';
     }
 
     async printPhoto() {
-        if (!this.capturedPhotoBlob) return;
+        if (!this.capturedPhotoBlobs.length) return;
         try {
+            const blob = this.capturedPhotoBlobs[this.currentPhotoIndex];
             const printWindow = window.open('', '_blank');
-            const photoURL = URL.createObjectURL(this.capturedPhotoBlob);
+            const photoURL = URL.createObjectURL(blob);
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
@@ -635,18 +528,16 @@ class PhotoboothApp {
             `);
             printWindow.document.close();
         } catch (error) {
-            console.error('Error printing photo:', error);
             alert('Failed to print photo. Please try again.');
         }
     }
 
     async sharePhoto() {
-        if (!this.capturedPhotoBlob) return;
+        if (!this.capturedPhotoBlobs.length) return;
         try {
+            const blob = this.capturedPhotoBlobs[this.currentPhotoIndex];
             if (navigator.share && navigator.canShare) {
-                const file = new File([this.capturedPhotoBlob], 'photobooth-photo.jpg', {
-                    type: 'image/jpeg'
-                });
+                const file = new File([blob], 'photobooth-photo.jpg', { type: 'image/jpeg' });
                 if (navigator.canShare({ files: [file] })) {
                     await navigator.share({
                         title: 'Photobooth Photo',
@@ -656,26 +547,21 @@ class PhotoboothApp {
                     return;
                 }
             }
-            const photoURL = URL.createObjectURL(this.capturedPhotoBlob);
+            const photoURL = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = photoURL;
-            link.download = `photobooth-photo-${Date.now()}.jpg`;
+            link.download = `photobooth-photo-${this.currentPhotoIndex + 1}.jpg`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(photoURL);
         } catch (error) {
-            console.error('Error sharing photo:', error);
             alert('Failed to share photo. The photo has been downloaded instead.');
         }
     }
 
     handleOrientationChange() {
-        if (this.stream) {
-            setTimeout(() => {
-                this.initializeCamera();
-            }, 100);
-        }
+        if (this.stream) setTimeout(() => this.initializeCamera(), 100);
     }
 
     destroy() {
@@ -705,11 +591,9 @@ window.addEventListener('beforeunload', () => {
         window.photoboothApp.destroy();
     }
 });
-
 window.addEventListener('error', (event) => {
     console.error('Global error:', event.error);
 });
-
 window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
 });
