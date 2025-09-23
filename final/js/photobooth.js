@@ -8,10 +8,12 @@ class PhotoboothApp {
         this.capturedPhotoBlobs = [];
         this.currentPhotoIndex = 0;
         this.compositeCanvas = document.createElement('canvas');
+        this.overlayMessageInterval = null;
 
         this.initializeElements();
         this.bindEvents();
         this.initializeCamera();
+        this.startOverlayMessageRotation();
     }
 
     initializeElements() {
@@ -35,6 +37,8 @@ class PhotoboothApp {
         this.downloadGalleryBtn = document.getElementById('download-gallery');
         // Sidebar gallery
         this.sidebarGallery = document.getElementById('sidebar-gallery');
+        // Instax overlay message
+        this.instaxMessage = document.getElementById('instax-message');
     }
 
     bindEvents() {
@@ -46,7 +50,8 @@ class PhotoboothApp {
         this.printBtn.addEventListener('click', () => this.printPhoto());
         this.printAllBtn.addEventListener('click', () => this.printAllPhotos());
         this.shareBtn.addEventListener('click', () => this.sharePhoto());
-        this.toggleVideoSizeBtn.addEventListener('click', () => this.toggleVideoSize());
+        if (this.toggleVideoSizeBtn)
+            this.toggleVideoSizeBtn.addEventListener('click', () => this.toggleVideoSize());
         this.downloadGalleryBtn.addEventListener('click', () => this.downloadGallery());
         window.addEventListener('orientationchange', () => setTimeout(() => this.handleOrientationChange(), 500));
         document.addEventListener('visibilitychange', () => {
@@ -127,12 +132,14 @@ class PhotoboothApp {
     enableCameraControls() {
         this.switchCameraBtn.disabled = false;
         this.takePhotoBtn.disabled = false;
-        this.toggleVideoSizeBtn.disabled = false;
+        if (this.toggleVideoSizeBtn)
+            this.toggleVideoSizeBtn.disabled = false;
     }
     disableCameraControls() {
         this.switchCameraBtn.disabled = true;
         this.takePhotoBtn.disabled = true;
-        this.toggleVideoSizeBtn.disabled = true;
+        if (this.toggleVideoSizeBtn)
+            this.toggleVideoSizeBtn.disabled = true;
     }
 
     handleCameraError(error) {
@@ -319,84 +326,84 @@ class PhotoboothApp {
     }
 
     addThankYouFrame(ctx, width, height) {
-    // Array of Bible verses/phrases (add as many as you like)
-    const verses = [
-  // Bible verses about joy
-  "The joy of the Lord is your strength. - Nehemiah 8:10",
-  "This is the day that the Lord has made; let us rejoice and be glad in it. - Psalm 118:24",
-  "Rejoice in the Lord always. I will say it again: Rejoice! - Philippians 4:4",
-  "You make known to me the path of life; in your presence there is fullness of joy. - Psalm 16:11",
-  "You have turned my mourning into joyful dancing. - Psalm 30:11",
-  "A cheerful heart is good medicine. - Proverbs 17:22",
-  "Shout for joy to the Lord, all the earth. - Psalm 100:1",
-  "May the God of hope fill you with all joy and peace as you trust in him. - Romans 15:13",
-  "I have told you this so that my joy may be in you and that your joy may be complete. - John 15:11",
-  "Those who sow with tears will reap with songs of joy. - Psalm 126:5",
-  // Joyful phrases
-  "Let your heart be full of joy!",
-  "Smile—God loves you!",
-  "Choose joy every day.",
-  "Joy is a gift—share it!",
-  "Today is a day for joyful memories!",
-   // Love
-  "Above all, love each other deeply, because love covers over a multitude of sins. - 1 Peter 4:8",
-  "Let all that you do be done in love. - 1 Corinthians 16:14",
-  "Love is patient, love is kind. - 1 Corinthians 13:4",
-  "And now these three remain: faith, hope and love. But the greatest of these is love. - 1 Corinthians 13:13",
-  "We love because He first loved us. - 1 John 4:19",
-  "Let us love one another, for love comes from God. - 1 John 4:7",
-  // Respect
-  "Be devoted to one another in love. Honor one another above yourselves. - Romans 12:10",
-  "Show proper respect to everyone, love the family of believers, fear God. - 1 Peter 2:17",
-  "Honor your father and your mother. - Exodus 20:12",
-  "Do to others as you would have them do to you. - Luke 6:31",
-  "Encourage one another and build each other up. - 1 Thessalonians 5:11",
-  "A friend loves at all times. - Proverbs 17:17",
-  // Phrases
-  "Respect is love in action.",
-  "Kindness is a language the deaf can hear and the blind can see.",
-  "Love and respect make a family strong.",
-  "Treat others with love and respect, always.",
-  "Where there is love, there is respect.",
-  "Respecting each other brings us closer together.",
-  "Let love and respect guide your heart.",
-];
+        // Array of Bible verses/phrases (add as many as you like)
+        const verses = [
+            // Bible verses about joy
+            "The joy of the Lord is your strength. - Nehemiah 8:10",
+            "This is the day that the Lord has made; let us rejoice and be glad in it. - Psalm 118:24",
+            "Rejoice in the Lord always. I will say it again: Rejoice! - Philippians 4:4",
+            "You make known to me the path of life; in your presence there is fullness of joy. - Psalm 16:11",
+            "You have turned my mourning into joyful dancing. - Psalm 30:11",
+            "A cheerful heart is good medicine. - Proverbs 17:22",
+            "Shout for joy to the Lord, all the earth. - Psalm 100:1",
+            "May the God of hope fill you with all joy and peace as you trust in him. - Romans 15:13",
+            "I have told you this so that my joy may be in you and that your joy may be complete. - John 15:11",
+            "Those who sow with tears will reap with songs of joy. - Psalm 126:5",
+            // Joyful phrases
+            "Let your heart be full of joy!",
+            "Smile—God loves you!",
+            "Choose joy every day.",
+            "Joy is a gift—share it!",
+            "Today is a day for joyful memories!",
+            // Love
+            "Above all, love each other deeply, because love covers over a multitude of sins. - 1 Peter 4:8",
+            "Let all that you do be done in love. - 1 Corinthians 16:14",
+            "Love is patient, love is kind. - 1 Corinthians 13:4",
+            "And now these three remain: faith, hope and love. But the greatest of these is love. - 1 Corinthians 13:13",
+            "We love because He first loved us. - 1 John 4:19",
+            "Let us love one another, for love comes from God. - 1 John 4:7",
+            // Respect
+            "Be devoted to one another in love. Honor one another above yourselves. - Romans 12:10",
+            "Show proper respect to everyone, love the family of believers, fear God. - 1 Peter 2:17",
+            "Honor your father and your mother. - Exodus 20:12",
+            "Do to others as you would have them do to you. - Luke 6:31",
+            "Encourage one another and build each other up. - 1 Thessalonians 5:11",
+            "A friend loves at all times. - Proverbs 17:17",
+            // Phrases
+            "Respect is love in action.",
+            "Kindness is a language the deaf can hear and the blind can see.",
+            "Love and respect make a family strong.",
+            "Treat others with love and respect, always.",
+            "Where there is love, there is respect.",
+            "Respecting each other brings us closer together.",
+            "Let love and respect guide your heart.",
+        ];
 
-    // Pick a random verse/phrase
-    const verse = verses[Math.floor(Math.random() * verses.length)];
+        // Pick a random verse/phrase
+        const verse = verses[Math.floor(Math.random() * verses.length)];
 
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(20, 20, width - 40, height - 80);
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(20, 20, width - 40, height - 80);
 
-    // Use a playful font if you have it loaded, otherwise fallback
-    ctx.fillStyle = '#666666';
-    ctx.font = "bold 20px 'Fredoka One', 'Comic Sans MS', cursive, Arial";
-    ctx.textAlign = 'center';
+        // Use a playful font if you have it loaded, otherwise fallback
+        ctx.fillStyle = '#666666';
+        ctx.font = "bold 20px 'Fredoka One', 'Comic Sans MS', cursive, Arial";
+        ctx.textAlign = 'center';
 
-    // Draw the verse, wrapping if it's too long
-    const maxWidth = width - 50;
-    const lines = [];
-    let currentLine = '';
-    verse.split(' ').forEach(word => {
-        const testLine = currentLine + (currentLine ? ' ' : '') + word;
-        if (ctx.measureText(testLine).width > maxWidth) {
-            lines.push(currentLine);
-            currentLine = word;
-        } else {
-            currentLine = testLine;
-        }
-    });
-    if (currentLine) lines.push(currentLine);
+        // Draw the verse, wrapping if it's too long
+        const maxWidth = width - 50;
+        const lines = [];
+        let currentLine = '';
+        verse.split(' ').forEach(word => {
+            const testLine = currentLine + (currentLine ? ' ' : '') + word;
+            if (ctx.measureText(testLine).width > maxWidth) {
+                lines.push(currentLine);
+                currentLine = word;
+            } else {
+                currentLine = testLine;
+            }
+        });
+        if (currentLine) lines.push(currentLine);
 
-    // Draw lines above the bottom padding
-    const lineHeight = 24;
-    let y = height - 20 - (lines.length - 1) * lineHeight;
-    lines.forEach(line => {
-        ctx.fillText(line, width / 2, y);
-        y += lineHeight;
-    });
-}
+        // Draw lines above the bottom padding
+        const lineHeight = 24;
+        let y = height - 20 - (lines.length - 1) * lineHeight;
+        lines.forEach(line => {
+            ctx.fillText(line, width / 2, y);
+            y += lineHeight;
+        });
+    }
 
     createFlashEffect() {
         const flash = document.createElement('div');
@@ -425,8 +432,8 @@ class PhotoboothApp {
         if (!this.capturedPhotoBlobs.length) return;
         try {
             const blob = this.capturedPhotoBlobs[this.currentPhotoIndex];
-            const printWindow = window.open('', '_blank');
             const photoURL = URL.createObjectURL(blob);
+            const printWindow = window.open('', '_blank');
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
@@ -606,6 +613,40 @@ class PhotoboothApp {
         if (this.stream) {
             this.stream.getTracks().forEach(track => track.stop());
         }
+        if (this.overlayMessageInterval) {
+            clearInterval(this.overlayMessageInterval);
+        }
+    }
+
+    // --- Instax Overlay Message Functions ---
+
+    getOverlayVerses() {
+        // Put your favorite verses/phrases for overlay here (reuse the ones from addThankYouFrame or make a new selection)
+        return [
+            "The joy of the Lord is your strength. - Nehemiah 8:10",
+            "This is the day that the Lord has made; let us rejoice and be glad in it. - Psalm 118:24",
+            "Love is patient, love is kind. - 1 Corinthians 13:4",
+            "Let all that you do be done in love. - 1 Corinthians 16:14",
+            "Respect is love in action.",
+            "Smile—God loves you!",
+            "Let your heart be full of joy!",
+            "Treat others with love and respect, always.",
+            "Home is wherever I’m with you.",
+            "Thank you for raising me with faith and love."
+        ];
+    }
+
+    updateInstaxOverlayMessage() {
+        const verses = this.getOverlayVerses();
+        const verse = verses[Math.floor(Math.random() * verses.length)];
+        if (this.instaxMessage) this.instaxMessage.textContent = verse;
+    }
+
+    startOverlayMessageRotation() {
+        this.updateInstaxOverlayMessage();
+        if (this.overlayMessageInterval) clearInterval(this.overlayMessageInterval);
+        // Change message every 10 seconds
+        this.overlayMessageInterval = setInterval(() => this.updateInstaxOverlayMessage(), 10000);
     }
 }
 

@@ -35,6 +35,44 @@ body {
     position: relative;
 }
 
+.instax-overlay {
+  pointer-events: none;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  z-index: 3;
+}
+
+.instax-overlay .instax-frame {
+  position: absolute;
+  top: 2.5%;
+  left: 2.5%;
+  width: 95%;
+  height: 87%;
+  border: 8px solid #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  box-sizing: border-box;
+}
+
+.instax-message {
+  position: absolute;
+  bottom: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  text-align: center;
+  font-family: 'Fredoka One', 'Comic Sans MS', cursive, Arial, sans-serif;
+  font-size: 1.1rem;
+  color: #666;
+  font-weight: bold;
+  text-shadow: 1px 1px 6px #fff, 0 0 2px #fff;
+  pointer-events: none;
+}
+
 /* Instax photo frame styling */
 .instax-frame {
     position: relative;
