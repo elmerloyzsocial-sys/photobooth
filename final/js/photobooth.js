@@ -236,7 +236,7 @@ class PhotoboothApp {
                 this.canvasElement.width = frameWidth;
                 this.canvasElement.height = frameHeight;
                 const ctx = this.canvasElement.getContext('2d');
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = '#FFFAE6';
                 ctx.fillRect(0, 0, frameWidth, frameHeight);
                 const padding = 20, bottomPadding = 60;
                 const photoX = padding, photoY = padding;
@@ -500,7 +500,7 @@ class PhotoboothApp {
         this.compositeCanvas.width = printWidth;
         this.compositeCanvas.height = printHeight;
         const ctx = this.compositeCanvas.getContext('2d');
-        ctx.fillStyle = "#fff";
+        ctx.fillStyle = "#FFFAE6";
         ctx.fillRect(0, 0, printWidth, printHeight);
 
         // Draw and center each photo
