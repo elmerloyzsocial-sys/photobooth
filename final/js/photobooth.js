@@ -4,12 +4,11 @@ class PhotoboothApp {
         this.currentCamera = 'user';
         this.timerSeconds = 3;
         this.isCountingDown = false;
+        this.isLargeVideo = false;
         this.capturedPhotoBlobs = [];
         this.currentPhotoIndex = 0;
         this.compositeCanvas = document.createElement('canvas');
         this.overlayMessageInterval = null;
-        this.overlayMessages = ["Smile!", "Say Cheese!", "Look at the camera!", "Strike a pose!"];
-        this.isLargeVideo = false;
 
         this.initializeElements();
         this.bindEvents();
@@ -31,242 +30,597 @@ class PhotoboothApp {
         this.switchCameraBtn = document.getElementById('switch-camera');
         this.takePhotoBtn = document.getElementById('take-photo');
         this.printBtn = document.getElementById('print-photo');
-        this.galleryGrid = document.getElementById('gallery-grid');
-        this.photoOverlay = document.getElementById('photo-overlay');
-        this.closePhotoBtn = document.getElementById('close-photo');
-        this.downloadPhotoBtn = document.getElementById('download-photo');
-        this.sharePhotoBtn = document.getElementById('share-photo');
-        this.retakePhotoBtn = document.getElementById('retake-photo');
-        this.printOverlay = document.getElementById('print-overlay');
-        this.closePrintBtn = document.getElementById('close-print');
-        this.printStartBtn = document.getElementById('print-start');
-        this.printPreviewImg = document.getElementById('print-preview-img');
-        this.flashEffect = document.getElementById('flash-effect');
-        this.overlayMessageElement = document.getElementById('message-text');
+        this.printAllBtn = document.getElementById('print-all-photos');
+        this.shareBtn = document.getElementById('share-photo');
+        this.retakeBtn = document.getElementById('retake-photo');
+        this.toggleVideoSizeBtn = document.getElementById('toggle-video-size');
+        this.downloadGalleryBtn = document.getElementById('download-gallery');
+        // Sidebar gallery
+        this.sidebarGallery = document.getElementById('sidebar-gallery');
+        // Instax overlay message
+        this.instaxMessage = document.getElementById('instax-message');
     }
 
     bindEvents() {
-        this.takePhotoBtn.addEventListener('click', () => this.startCountdown());
+        this.timerDecrease.addEventListener('click', () => this.adjustTimer(-1));
+        this.timerIncrease.addEventListener('click', () => this.adjustTimer(1));
         this.switchCameraBtn.addEventListener('click', () => this.switchCamera());
-        this.timerIncrease.addEventListener('click', () => this.updateTimer(1));
-        this.timerDecrease.addEventListener('click', () => this.updateTimer(-1));
-        this.closePhotoBtn.addEventListener('click', () => this.hidePhotoOverlay());
-        this.downloadPhotoBtn.addEventListener('click', () => this.downloadPhoto());
-        this.sharePhotoBtn.addEventListener('click', () => this.sharePhoto());
-        this.retakePhotoBtn.addEventListener('click', () => this.retakePhoto());
-        this.printBtn.addEventListener('click', () => this.showPrintPreview());
-        this.closePrintBtn.addEventListener('click', () => this.hidePrintOverlay());
-        this.printStartBtn.addEventListener('click', () => this.printComposite());
-        window.addEventListener('orientationchange', () => this.handleOrientationChange());
-        window.addEventListener('beforeunload', () => this.destroy());
-    }
-
-    async initializeCamera() {
-        if (this.stream) this.stream.getTracks().forEach(track => track.stop());
-        try {
-            const constraints = {
-                video: {
-                    facingMode: this.currentCamera,
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
-                },
-                audio: false
-            };
-            this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-            this.videoElement.srcObject = this.stream;
-            this.videoElement.addEventListener('loadedmetadata', () => {
-                const videoRatio = this.videoElement.videoWidth / this.videoElement.videoHeight;
-                const frameRatio = this.instaxFrame.offsetWidth / this.instaxFrame.offsetHeight;
-                this.isLargeVideo = videoRatio > frameRatio;
-            }, { once: true });
-        } catch (error) {
-            console.error('Error accessing camera:', error);
-            this.showError(`Error accessing camera: ${error.message}`);
-        }
-    }
-
-    switchCamera() {
-        this.currentCamera = (this.currentCamera === 'user') ? 'environment' : 'user';
-        this.initializeCamera();
-    }
-
-    updateTimer(value) {
-        this.timerSeconds = Math.max(1, this.timerSeconds + value);
-        this.timerDisplay.textContent = `${this.timerSeconds}s`;
-    }
-
-    startCountdown() {
-        if (this.isCountingDown) return;
-        this.isCountingDown = true;
-        this.countdownNumber.textContent = this.timerSeconds;
-        this.countdownOverlay.style.display = 'flex';
-        this.takePhotoBtn.disabled = true;
-
-        let countdown = this.timerSeconds;
-        const countdownInterval = setInterval(() => {
-            countdown--;
-            if (countdown > 0) {
-                this.countdownNumber.textContent = countdown;
-            } else {
-                clearInterval(countdownInterval);
-                this.countdownOverlay.style.display = 'none';
-                this.isCountingDown = false;
-                this.takePhotoBtn.disabled = false;
-                this.takePhoto();
+        this.takePhotoBtn.addEventListener('click', () => this.startPhotoSequence());
+        this.retakeBtn.addEventListener('click', () => this.retakePhotos());
+        this.printBtn.addEventListener('click', () => this.printPhoto());
+        this.printAllBtn.addEventListener('click', () => this.printAllPhotos());
+        this.shareBtn.addEventListener('click', () => this.sharePhoto());
+        if (this.toggleVideoSizeBtn)
+            this.toggleVideoSizeBtn.addEventListener('click', () => this.toggleVideoSize());
+        this.downloadGalleryBtn.addEventListener('click', () => this.downloadGallery());
+        window.addEventListener('orientationchange', () => setTimeout(() => this.handleOrientationChange(), 500));
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && !this.stream) {
+                this.initializeCamera();
             }
-        }, 1000);
-    }
-
-    takePhoto() {
-        const width = this.videoElement.videoWidth;
-        const height = this.videoElement.videoHeight;
-        this.canvasElement.width = width;
-        this.canvasElement.height = height;
-
-        const ctx = this.canvasElement.getContext('2d');
-        ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(this.videoElement, 0, 0, width, height);
-
-        this.canvasElement.toBlob(blob => {
-            if (blob) {
-                this.capturedPhotoBlobs.push(blob);
-                this.renderGalleryThumbnails();
-                this.showFlashEffect();
-                this.showPhotoOverlay(this.capturedPhotoBlobs.length - 1);
-            }
-        }, 'image/jpeg', 0.95);
-    }
-
-    showFlashEffect() {
-        this.flashEffect.style.display = 'block';
-        setTimeout(() => {
-            this.flashEffect.style.display = 'none';
-        }, 300);
-    }
-
-    renderGalleryThumbnails() {
-        this.galleryGrid.innerHTML = '';
-        this.capturedPhotoBlobs.forEach((blob, index) => {
-            const img = document.createElement('img');
-            img.src = URL.createObjectURL(blob);
-            img.classList.add('gallery-thumb');
-            img.alt = `Photo ${index + 1}`;
-            img.onclick = () => this.showPhotoOverlay(index);
-            this.galleryGrid.appendChild(img);
         });
     }
 
-    showPhotoOverlay(index) {
-        this.currentPhotoIndex = index;
-        const blob = this.capturedPhotoBlobs[index];
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(blob);
-        this.photoResult.innerHTML = '';
-        this.photoResult.appendChild(img);
-        this.photoResult.appendChild(this.createPhotoControls());
-        this.photoOverlay.style.display = 'flex';
+    adjustTimer(change) {
+        const newTime = this.timerSeconds + change;
+        if (newTime >= 0 && newTime <= 10) {
+            this.timerSeconds = newTime;
+            this.timerDisplay.textContent = this.timerSeconds;
+        }
     }
 
-    createPhotoControls() {
-        const controlsDiv = document.createElement('div');
-        controlsDiv.className = 'photo-controls';
-        controlsDiv.innerHTML = `
-            <button id="close-photo" class="dslr-btn" title="Close" aria-label="Close Photo View">
-                <div class="btn-icon">
-                    <svg viewBox="0 0 48 48" width="40" height="40">
-                        <path d="M12 12l24 24M12 36l24-24" stroke="#222" stroke-width="4" stroke-linecap="round"/>
-                    </svg>
-                </div>
-                <div class="btn-label">Close</div>
-            </button>
-            <button id="download-photo" class="dslr-btn" title="Download" aria-label="Download Photo">
-                <div class="btn-icon">
-                    <svg viewBox="0 0 48 48" width="40" height="40">
-                        <path d="M24 38L12 26h8V8h8v18h8L24 38zM24 38v4" stroke="#222" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-                <div class="btn-label">Download</div>
-            </button>
-            <button id="share-photo" class="dslr-btn" title="Share" aria-label="Share Photo">
-                <div class="btn-icon">
-                    <svg viewBox="0 0 48 48" width="40" height="40">
-                        <path d="M30 18a6 6 0 1 0 0-12a6 6 0 0 0 0 12zM18 30a6 6 0 1 0 0-12a6 6 0 0 0 0 12zM30 42a6 6 0 1 0 0-12a6 6 0 0 0 0 12z" fill="#222"/>
-                        <path d="M30 18l-12 12" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round"/>
-                    </svg>
-                </div>
-                <div class="btn-label">Share</div>
-            </button>
-            <button id="retake-photo" class="dslr-btn" title="Retake" aria-label="Retake Photo">
-                <div class="btn-icon">
-                    <svg viewBox="0 0 48 48" width="40" height="40">
-                        <rect x="18" y="15" width="12" height="18" rx="1.2" ry="1.5" fill="#222"/>
-                        <path d="M24 30q2 2 4 0" stroke="#222" stroke-width="2" fill="none"/>
-                    </svg>
-                </div>
-                <div class="btn-label">Retake</div>
-            </button>
-        `;
-        controlsDiv.querySelector('#close-photo').addEventListener('click', () => this.hidePhotoOverlay());
-        controlsDiv.querySelector('#download-photo').addEventListener('click', () => this.downloadPhoto());
-        controlsDiv.querySelector('#share-photo').addEventListener('click', () => this.sharePhoto());
-        controlsDiv.querySelector('#retake-photo').addEventListener('click', () => this.retakePhoto());
-        return controlsDiv;
+    async initializeCamera() {
+        try {
+            if (this.stream) this.stream.getTracks().forEach(track => track.stop());
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            if (videoDevices.length === 0) {
+                this.handleCameraError(new Error('No camera devices found'));
+                return;
+            }
+            let constraints = {
+                video: {
+                    facingMode: this.currentCamera,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: false
+            };
+            try {
+                this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+            } catch (e) {
+                constraints = { video: true, audio: false };
+                this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+            }
+            this.videoElement.srcObject = this.stream;
+            await new Promise((resolve) => {
+                this.videoElement.onloadedmetadata = resolve;
+            });
+            this.videoElement.style.display = 'block';
+            this.capturedPhotoDiv.style.display = 'none';
+            this.enableCameraControls();
+            if (this.isLargeVideo) {
+                this.videoElement.classList.remove('normal-size');
+                this.videoElement.classList.add('large-size');
+                if (this.instaxFrame) {
+                    this.instaxFrame.classList.remove('normal-size');
+                    this.instaxFrame.classList.add('large-size');
+                }
+            } else {
+                this.videoElement.classList.remove('large-size');
+                this.videoElement.classList.add('normal-size');
+                if (this.instaxFrame) {
+                    this.instaxFrame.classList.remove('large-size');
+                    this.instaxFrame.classList.add('normal-size');
+                }
+            }
+        } catch (error) {
+            this.handleCameraError(error);
+        }
     }
 
-    hidePhotoOverlay() {
-        this.photoOverlay.style.display = 'none';
-        this.photoResult.innerHTML = '';
+    async switchCamera() {
+        if (this.isCountingDown) return;
+        try {
+            this.currentCamera = this.currentCamera === 'user' ? 'environment' : 'user';
+            await this.initializeCamera();
+        } catch (error) {
+            this.currentCamera = this.currentCamera === 'user' ? 'environment' : 'user';
+        }
     }
 
-    downloadPhoto() {
-        const photoBlob = this.capturedPhotoBlobs[this.currentPhotoIndex];
-        const url = URL.createObjectURL(photoBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `photobooth-${Date.now()}.jpg`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+    enableCameraControls() {
+        this.switchCameraBtn.disabled = false;
+        this.takePhotoBtn.disabled = false;
+        if (this.toggleVideoSizeBtn)
+            this.toggleVideoSizeBtn.disabled = false;
+    }
+    disableCameraControls() {
+        this.switchCameraBtn.disabled = true;
+        this.takePhotoBtn.disabled = true;
+        if (this.toggleVideoSizeBtn)
+            this.toggleVideoSizeBtn.disabled = true;
     }
 
-    retakePhoto() {
-        this.capturedPhotoBlobs.splice(this.currentPhotoIndex, 1);
-        this.renderGalleryThumbnails();
-        this.hidePhotoOverlay();
+    handleCameraError(error) {
+        let errorMessage = 'Camera access failed. ';
+        if (error.name === 'NotAllowedError') {
+            errorMessage += 'Please allow camera permissions and refresh the page.';
+        } else if (error.name === 'NotFoundError') {
+            errorMessage += 'No camera found on this device.';
+        } else if (error.name === 'NotSupportedError') {
+            errorMessage += 'Camera not supported in this browser.';
+        } else {
+            errorMessage += 'Please check your camera and try again.';
+        }
+        this.videoElement.style.display = 'none';
+        this.videoElement.parentElement.innerHTML = `<div class="error">${errorMessage}</div>`;
+        this.disableCameraControls();
+    }
+
+    toggleVideoSize() {
+        this.isLargeVideo = !this.isLargeVideo;
+        if (this.isLargeVideo) {
+            this.videoElement.classList.remove('normal-size');
+            this.videoElement.classList.add('large-size');
+            if (this.instaxFrame) {
+                this.instaxFrame.classList.remove('normal-size');
+                this.instaxFrame.classList.add('large-size');
+            }
+        } else {
+            this.videoElement.classList.remove('large-size');
+            this.videoElement.classList.add('normal-size');
+            if (this.instaxFrame) {
+                this.instaxFrame.classList.remove('large-size');
+                this.instaxFrame.classList.add('normal-size');
+            }
+        }
+    }
+
+    async startPhotoSequence() {
+        if (this.isCountingDown) return;
+        this.isCountingDown = true;
+        this.disableCameraControls();
+        this.capturedPhotoBlobs = [];
+        this.currentPhotoIndex = 0;
+        const numPhotos = 4;
+        for (let i = 0; i < numPhotos; i++) {
+            await this.runCountdown();
+            await this.capturePhotoToBlob();
+            if (i < numPhotos - 1) await this.wait(600);
+        }
+        this.isCountingDown = false;
+        this.enableCameraControls();
+        this.currentPhotoIndex = 0;
+        this.showPhoto(this.currentPhotoIndex);
+        this.updateSidebarGallery();
+        this.downloadGalleryBtn.style.display = 'inline-flex';
+    }
+
+    wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    runCountdown() {
+        return new Promise(resolve => {
+            let countdown = this.timerSeconds;
+            if (countdown <= 0) return resolve();
+            this.countdownNumber.textContent = countdown;
+            this.countdownOverlay.style.display = 'flex';
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    this.countdownNumber.textContent = countdown;
+                    this.countdownNumber.style.animation = 'none';
+                    setTimeout(() => {
+                        this.countdownNumber.style.animation = 'countdown-pulse 1s ease-in-out';
+                    }, 10);
+                } else {
+                    clearInterval(countdownInterval);
+                    this.countdownOverlay.style.display = 'none';
+                    resolve();
+                }
+            }, 1000);
+        });
+    }
+
+    capturePhotoToBlob() {
+        return new Promise((resolve, reject) => {
+            try {
+                this.createFlashEffect();
+                const video = this.videoElement;
+                // 4:3 aspect
+                const aspectRatio = 4 / 3;
+                const frameWidth = 800;
+                const frameHeight = frameWidth / aspectRatio;
+                this.canvasElement.width = frameWidth;
+                this.canvasElement.height = frameHeight;
+                const ctx = this.canvasElement.getContext('2d');
+                ctx.fillStyle = '#FFFAE6';
+                ctx.fillRect(0, 0, frameWidth, frameHeight);
+                const padding = 20, bottomPadding = 60;
+                const photoX = padding, photoY = padding;
+                const photoWidth = frameWidth - (padding * 2);
+                const photoHeight = frameHeight - padding - bottomPadding;
+                const videoAspect = video.videoWidth / video.videoHeight;
+                const photoAspect = photoWidth / photoHeight;
+                let drawWidth, drawHeight, drawX, drawY;
+                if (videoAspect > photoAspect) {
+                    drawHeight = photoHeight;
+                    drawWidth = drawHeight * videoAspect;
+                    drawX = photoX + (photoWidth - drawWidth) / 2;
+                    drawY = photoY;
+                } else {
+                    drawWidth = photoWidth;
+                    drawHeight = drawWidth / videoAspect;
+                    drawX = photoX;
+                    drawY = photoY + (photoHeight - drawHeight) / 2;
+                }
+                ctx.save();
+                if (this.currentCamera === 'user') {
+                    ctx.translate(drawX + drawWidth, drawY);
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(video, 0, 0, drawWidth, drawHeight);
+                } else {
+                    ctx.drawImage(video, drawX, drawY, drawWidth, drawHeight);
+                }
+                ctx.restore();
+                this.addThankYouFrame(ctx, frameWidth, frameHeight);
+                this.canvasElement.toBlob(blob => {
+                    this.capturedPhotoBlobs.push(blob);
+                    resolve(blob);
+                }, 'image/jpeg', 0.9);
+            } catch (e) {
+                reject(e);
+            }
+        });
+    }
+
+    showPhoto(idx) {
+        if (!this.capturedPhotoBlobs[idx]) return;
+        this.capturedPhotoDiv.style.display = 'block';
+        this.videoElement.style.display = 'none';
+        const photoURL = URL.createObjectURL(this.capturedPhotoBlobs[idx]);
+        this.photoResult.src = photoURL;
+        this.photoResult.onload = () => URL.revokeObjectURL(photoURL);
+        this.printBtn.disabled = false;
+        this.printAllBtn.disabled = false;
+        this.shareBtn.disabled = false;
+        this.retakeBtn.style.display = 'block';
+        this.takePhotoBtn.style.display = 'none';
+        this.updateSidebarGallery(idx);
+    }
+
+    updateSidebarGallery(selectedIdx) {
+        if (!this.capturedPhotoBlobs.length) {
+            this.sidebarGallery.innerHTML = '';
+            return;
+        }
+        this.sidebarGallery.innerHTML = '';
+        this.capturedPhotoBlobs.forEach((blob, i) => {
+            const div = document.createElement('div');
+            div.className = 'gallery-thumb';
+            if (selectedIdx === i) div.classList.add('selected');
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(blob);
+            img.alt = `Photo ${i + 1}`;
+            img.title = `Photo ${i + 1}`;
+            img.addEventListener('click', () => {
+                this.currentPhotoIndex = i;
+                this.showPhoto(i);
+            });
+            div.appendChild(img);
+            this.sidebarGallery.appendChild(div);
+        });
+    }
+
+    downloadGallery() {
+        this.capturedPhotoBlobs.forEach((blob, i) => {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `photobooth-photo-${i + 1}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
+    addThankYouFrame(ctx, width, height) {
+        // Array of Bible verses/phrases (add as many as you like)
+        const verses = [
+            // Bible verses about joy
+            "The joy of the Lord is your strength. - Nehemiah 8:10",
+            "This is the day that the Lord has made; let us rejoice and be glad in it. - Psalm 118:24",
+            "Rejoice in the Lord always. I will say it again: Rejoice! - Philippians 4:4",
+            "You make known to me the path of life; in your presence there is fullness of joy. - Psalm 16:11",
+            "You have turned my mourning into joyful dancing. - Psalm 30:11",
+            "A cheerful heart is good medicine. - Proverbs 17:22",
+            "Shout for joy to the Lord, all the earth. - Psalm 100:1",
+            "May the God of hope fill you with all joy and peace as you trust in him. - Romans 15:13",
+            "I have told you this so that my joy may be in you and that your joy may be complete. - John 15:11",
+            "Those who sow with tears will reap with songs of joy. - Psalm 126:5",
+            // Joyful phrases
+            "Let your heart be full of joy!",
+            "Smile—God loves you!",
+            "Choose joy every day.",
+            "Joy is a gift—share it!",
+            "Today is a day for joyful memories!",
+            // Love
+            "Above all, love each other deeply, because love covers over a multitude of sins. - 1 Peter 4:8",
+            "Let all that you do be done in love. - 1 Corinthians 16:14",
+            "Love is patient, love is kind. - 1 Corinthians 13:4",
+            "And now these three remain: faith, hope and love. But the greatest of these is love. - 1 Corinthians 13:13",
+            "We love because He first loved us. - 1 John 4:19",
+            "Let us love one another, for love comes from God. - 1 John 4:7",
+            // Respect
+            "Be devoted to one another in love. Honor one another above yourselves. - Romans 12:10",
+            "Show proper respect to everyone, love the family of believers, fear God. - 1 Peter 2:17",
+            "Honor your father and your mother. - Exodus 20:12",
+            "Do to others as you would have them do to you. - Luke 6:31",
+            "Encourage one another and build each other up. - 1 Thessalonians 5:11",
+            "A friend loves at all times. - Proverbs 17:17",
+            // Phrases
+            "Respect is love in action.",
+            "Kindness is a language the deaf can hear and the blind can see.",
+            "Love and respect make a family strong.",
+            "Treat others with love and respect, always.",
+            "Where there is love, there is respect.",
+            "Respecting each other brings us closer together.",
+            "Let love and respect guide your heart.",
+        ];
+
+        // Pick a random verse/phrase
+        const verse = verses[Math.floor(Math.random() * verses.length)];
+
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(20, 20, width - 40, height - 80);
+
+        // Use a playful font if you have it loaded, otherwise fallback
+        ctx.fillStyle = '#666666';
+        ctx.font = "bold 20px 'Fredoka One', 'Comic Sans MS', cursive, Arial";
+        ctx.textAlign = 'center';
+
+        // Draw the verse, wrapping if it's too long
+        const maxWidth = width - 50;
+        const lines = [];
+        let currentLine = '';
+        verse.split(' ').forEach(word => {
+            const testLine = currentLine + (currentLine ? ' ' : '') + word;
+            if (ctx.measureText(testLine).width > maxWidth) {
+                lines.push(currentLine);
+                currentLine = word;
+            } else {
+                currentLine = testLine;
+            }
+        });
+        if (currentLine) lines.push(currentLine);
+
+        // Draw lines above the bottom padding
+        const lineHeight = 24;
+        let y = height - 20 - (lines.length - 1) * lineHeight;
+        lines.forEach(line => {
+            ctx.fillText(line, width / 2, y);
+            y += lineHeight;
+        });
+    }
+
+    createFlashEffect() {
+        const flash = document.createElement('div');
+        flash.className = 'flash-effect';
+        document.body.appendChild(flash);
+        setTimeout(() => {
+            document.body.removeChild(flash);
+        }, 300);
+    }
+
+    retakePhotos() {
+        this.capturedPhotoBlobs = [];
+        this.currentPhotoIndex = 0;
+        this.capturedPhotoDiv.style.display = 'none';
+        this.videoElement.style.display = 'block';
+        this.downloadGalleryBtn.style.display = 'none';
+        this.printBtn.disabled = true;
+        this.printAllBtn.disabled = true;
+        this.shareBtn.disabled = true;
+        this.retakeBtn.style.display = 'none';
+        this.takePhotoBtn.style.display = 'block';
+        this.updateSidebarGallery();
+    }
+
+    async printPhoto() {
+        if (!this.capturedPhotoBlobs.length) return;
+        try {
+            const blob = this.capturedPhotoBlobs[this.currentPhotoIndex];
+            const photoURL = URL.createObjectURL(blob);
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Print Photo</title>
+                    <style>
+                        body { 
+                            margin: 0; 
+                            padding: 20px; 
+                            display: flex; 
+                            justify-content: center; 
+                            align-items: center; 
+                            min-height: 100vh;
+                            background: white;
+                        }
+                        img { 
+                            max-width: 100%; 
+                            max-height: 100%; 
+                            border: 20px solid white;
+                            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+                        }
+                        @media print {
+                            body { padding: 0; }
+                            img { border: 10px solid white; box-shadow: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <img src="${photoURL}" alt="Captured Photo" onload="window.print(); window.close();">
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        } catch (error) {
+            alert('Failed to print photo. Please try again.');
+        }
+    }
+
+    // UPDATED PRINT ALL FOR 4x4 INCHES AT 300DPI WITH INDIVIDUAL PHOTO BORDER
+    async printAllPhotos() {
+        if (!this.capturedPhotoBlobs.length) return;
+
+        // Load up to 4 images as HTMLImageElements
+        const images = await Promise.all(
+            this.capturedPhotoBlobs.slice(0, 4).map(blob => this.loadImageFromBlob(blob))
+        );
+
+        // 4x4 inches at 300 DPI (square)
+        const DPI = 300;
+        const printWidth = 4 * DPI; // 1200px
+        const printHeight = 4 * DPI; // 1200px
+
+        // Margins and spacing
+        const border = 32; // px, outer white border
+        const gap = 40; // px, between photos
+        const frameMargin = 18; // px, border around each photo
+
+        // Calculate photo area
+        const n = images.length;
+        const availableHeight = printHeight - (2 * border) - (gap * (n - 1));
+        const photoHeight = Math.floor(availableHeight / n);
+        const photoWidth = printWidth - 2 * border;
+
+        // Prepare composite canvas
+        this.compositeCanvas.width = printWidth;
+        this.compositeCanvas.height = printHeight;
+        const ctx = this.compositeCanvas.getContext('2d');
+        ctx.fillStyle = "#FFFAE6";
+        ctx.fillRect(0, 0, printWidth, printHeight);
+
+        // Draw and center each photo with its own border
+        let y = border;
+        images.forEach((img, i) => {
+            // Maintain aspect ratio, fit within photoWidth x photoHeight
+            let imgAspect = img.width / img.height;
+            let targetWidth = photoWidth;
+            let targetHeight = photoHeight;
+            if (img.width > img.height) {
+                targetHeight = Math.min(photoHeight, Math.floor(photoWidth / imgAspect));
+            } else {
+                targetWidth = Math.min(photoWidth, Math.floor(photoHeight * imgAspect));
+            }
+            const x = border + Math.floor((photoWidth - targetWidth) / 2);
+
+            // Draw border behind each photo
+            ctx.fillStyle = "#fff"; // photo border color (white)
+            ctx.fillRect(
+                x - frameMargin,
+                y - frameMargin,
+                targetWidth + 2 * frameMargin,
+                targetHeight + 2 * frameMargin
+            );
+
+            // Draw photo
+            ctx.drawImage(img, x, y, targetWidth, targetHeight);
+            y += photoHeight + gap;
+        });
+
+        // Print the composite
+        this.compositeCanvas.toBlob((blob) => {
+            const photoURL = URL.createObjectURL(blob);
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Print All Photos</title>
+                    <style>
+                        @page {
+                            size: 4in 4in;
+                            margin: 0;
+                        }
+                        html, body {
+                            width: 4in;
+                            height: 4in;
+                            margin: 0;
+                            padding: 0;
+                            background: white;
+                        }
+                        body {
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 100vh;
+                        }
+                        img {
+                            width: 100%;
+                            height: auto;
+                            display: block;
+                            background: white;
+                        }
+                        @media print {
+                            body { margin: 0; padding: 0; }
+                            img { box-shadow: none; border: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <img src="${photoURL}" alt="All Photobooth Photos" onload="window.print(); window.close();">
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }, 'image/png');
+    }
+
+    loadImageFromBlob(blob) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = URL.createObjectURL(blob);
+        });
     }
 
     async sharePhoto() {
+        if (!this.capturedPhotoBlobs.length) return;
         try {
-            const photoBlob = this.capturedPhotoBlobs[this.currentPhotoIndex];
-            const file = new File([photoBlob], `photobooth-${Date.now()}.jpg`, { type: photoBlob.type });
-            if (navigator.share) {
-                await navigator.share({
-                    files: [file],
-                    title: 'Photobooth Photo',
-                    text: 'Check out this photo I took!'
-                });
-            } else {
-                alert('Web Share API is not supported in this browser. The photo has been downloaded instead.');
-                this.downloadPhoto();
+            const blob = this.capturedPhotoBlobs[this.currentPhotoIndex];
+            if (navigator.share && navigator.canShare) {
+                const file = new File([blob], 'photobooth-photo.jpg', { type: 'image/jpeg' });
+                if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        title: 'Photobooth Photo',
+                        text: 'Check out my photo from the photobooth!',
+                        files: [file]
+                    });
+                    return;
+                }
             }
+            const photoURL = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = photoURL;
+            link.download = `photobooth-photo-${this.currentPhotoIndex + 1}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(photoURL);
         } catch (error) {
-            console.error('Failed to share:', error);
             alert('Failed to share photo. The photo has been downloaded instead.');
         }
-    }
-    
-    startOverlayMessageRotation() {
-        this.overlayMessageInterval = setInterval(() => {
-            const randomIndex = Math.floor(Math.random() * this.overlayMessages.length);
-            this.overlayMessageElement.textContent = this.overlayMessages[randomIndex];
-        }, 5000);
     }
 
     handleOrientationChange() {
         if (this.stream) setTimeout(() => this.initializeCamera(), 100);
     }
-    
+
     destroy() {
         if (this.stream) {
             this.stream.getTracks().forEach(track => track.stop());
@@ -275,8 +629,8 @@ class PhotoboothApp {
             clearInterval(this.overlayMessageInterval);
         }
     }
+  
 }
-
 document.addEventListener('DOMContentLoaded', () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         document.body.innerHTML = `
@@ -290,4 +644,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     window.photoboothApp = new PhotoboothApp();
+});
+
+window.addEventListener('beforeunload', () => {
+    if (window.photoboothApp) {
+        window.photoboothApp.destroy();
+    }
+});
+window.addEventListener('error', (event) => {
+    console.error('Global error:', event.error);
+});
+window.addEventListener('unhandledrejection', (event) => {
+    console.error('Unhandled promise rejection:', event.reason);
 });
