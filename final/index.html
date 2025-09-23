@@ -5,231 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instax Photobooth</title>
     <link rel="stylesheet" href="css/style.css">
-    <style>
-        .camera-section {
-            position: relative;
-        }
-        .instax-overlay {
-            pointer-events: none;
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            align-items: center;
-            z-index: 3;
-        }
-        .instax-frame-border {
-            position: absolute;
-            top: 2.5%;
-            left: 2.5%;
-            width: 95%;
-            height: 87%;
-            border: 8px solid #fff;
-            border-radius: 18px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-            box-sizing: border-box;
-            background: transparent;
-        }
-        .instax-message {
-            position: absolute;
-            bottom: 5%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            text-align: center;
-            font-family: 'Fredoka One', 'Comic Sans MS', cursive, Arial, sans-serif;
-            font-size: 1.1rem;
-            color: #666;
-            font-weight: bold;
-            text-shadow: 1px 1px 6px #fff, 0 0 2px #fff;
-            pointer-events: none;
-        }
-        .dslr-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        .btn-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .btn-label {
-            font-size: 0.7rem;
-            color: #888;
-            margin-top: 2px;
-            line-height: 1;
-            pointer-events: none;
-            user-select: none;
-            font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
-            letter-spacing: 0.01em;
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Comic+Sans+MS:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="photobooth-container">
-        <!-- Camera Display Area (80%) -->
-        <div class="camera-section">
-            <div class="instax-frame" style="position: relative;">
-                <video
-                    id="camera-feed"
-                    autoplay
-                    playsinline
-                    class="normal-size"
-                ></video>
-                <!-- Instax Overlay for Live Preview START -->
-                <div class="instax-overlay">
-                    <div class="instax-frame-border"></div>
-                    <div class="instax-message" id="instax-message"></div>
-                </div>
-                <!-- Instax Overlay for Live Preview END -->
-                <canvas id="photo-canvas" style="display: none;"></canvas>
-                <div
-                    id="captured-photo"
-                    class="captured-photo"
-                    style="display: none;"
-                >
-                    <img id="photo-result" alt="Captured photo">
-                </div>
-                <div
-                    id="countdown-overlay"
-                    class="countdown-overlay"
-                    style="display: none;"
-                >
-                    <span id="countdown-number">3</span>
+
+    <main class="photobooth-container">
+
+        <section class="camera-section">
+            <div class="instax-overlay">
+                <div class="instax-frame-border"></div>
+                <div class="instax-message-container">
+                    <p class="instax-message" id="message-text">Smile!</p>
                 </div>
             </div>
-            <!-- Bottom DSLR Controls -->
+
+            <div class="video-container">
+                <video id="camera-feed" autoplay playsinline></video>
+                <div class="countdown-overlay" id="countdown-overlay">
+                    <span class="countdown-number" id="countdown-number"></span>
+                </div>
+                <canvas id="photo-canvas" style="display: none;"></canvas>
+                <div class="flash-effect" id="flash-effect"></div>
+            </div>
+
             <div class="bottom-controls">
-                <!-- Timer Controls -->
-                <button id="timer-decrease" class="dslr-btn" title="Decrease Timer">
+                <button id="switch-camera" class="dslr-btn" title="Switch Camera" aria-label="Switch Camera">
                     <div class="btn-icon">
                         <svg viewBox="0 0 48 48" width="40" height="40">
-                            <ellipse cx="24" cy="24" rx="22" ry="22" fill="#ffec99" stroke="#fab005" stroke-width="2"/>
-                            <rect x="14" y="22" width="20" height="4" rx="2" fill="#fa5252"/>
-                        </svg>
-                    </div>
-                    <div class="btn-label">-1s</div>
-                </button>
-                <span id="timer-display" style="font-size:2rem;min-width:40px;text-align:center;color:#fd6e77;font-weight:bold;">3</span>
-                <button id="timer-increase" class="dslr-btn" title="Increase Timer">
-                    <div class="btn-icon">
-                        <svg viewBox="0 0 48 48" width="40" height="40">
-                            <ellipse cx="24" cy="24" rx="22" ry="22" fill="#d3f9d8" stroke="#51cf66" stroke-width="2"/>
-                            <rect x="14" y="22" width="20" height="4" rx="2" fill="#38d9a9"/>
-                            <rect x="22" y="14" width="4" height="20" rx="2" fill="#38d9a9"/>
-                        </svg>
-                    </div>
-                    <div class="btn-label">+1s</div>
-                </button>
-                <!-- Switch Camera -->
-                <button id="switch-camera" class="dslr-btn" title="Switch Camera">
-                    <div class="btn-icon">
-                        <svg viewBox="0 0 48 48" width="40" height="40">
-                            <ellipse cx="24" cy="24" rx="22" ry="22" fill="#e7f5ff" stroke="#228be6" stroke-width="2"/>
-                            <rect x="14" y="18" width="20" height="14" rx="5" fill="#4dabf7"/>
-                            <circle cx="24" cy="25" r="5" fill="#fff"/>
-                            <path d="M34 22l3-5" stroke="#fab005" stroke-width="2" fill="none" stroke-linecap="round"/>
-                            <path d="M34 22l7 1" stroke="#fab005" stroke-width="2" fill="none" stroke-linecap="round"/>
-                            <path d="M10 32c5 5 23 5 28 0" stroke="#40c057" stroke-width="3" fill="none" stroke-linecap="round"/>
+                            <path d="M12 18V6a2 2 0 0 1 2-2h20a2 2 0 0 1 2 2v12m0 0a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4V18h-8V6h-8v12h-4a2 2 0 0 1-2-2v-2" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M24 24a8 8 0 1 0 0 16a8 8 0 0 0 0-16z" stroke="#222" stroke-width="2" fill="none"/>
+                            <path d="M16 8h16m-8 4v-4" stroke="#222" stroke-width="2" fill="none"/>
                         </svg>
                     </div>
                     <div class="btn-label">Switch</div>
                 </button>
-                <!-- Take 4 Photos -->
-                <button id="take-photo" class="dslr-btn" title="Take 4 Photos">
-                    <div class="btn-icon">
+
+                <div class="timer-controls">
+                    <button id="timer-decrease" class="dslr-btn timer-btn" aria-label="Decrease Timer">
                         <svg viewBox="0 0 48 48" width="40" height="40">
-                            <rect x="10" y="16" width="28" height="18" rx="8" fill="#fff3bf" stroke="#fcc419" stroke-width="2"/>
-                            <circle cx="24" cy="25" r="6" fill="#ffd43b" stroke="#fab005" stroke-width="2"/>
-                            <ellipse cx="17" cy="23" rx="1" ry="2" fill="#222"/>
-                            <ellipse cx="31" cy="23" rx="1" ry="2" fill="#222"/>
-                            <path d="M20 28q2 2 4 0" stroke="#222" stroke-width="2" fill="none"/>
-                            <polygon points="24,13 27,16 21,16" fill="#fab005"/>
-                            <rect x="21" y="12" width="6" height="3" rx="1" fill="#ffd43b"/>
+                            <path d="M24 8v32M12 24h24" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round"/>
                         </svg>
-                    </div>
-                    <div class="btn-label">Snap 4</div>
-                </button>
-                <!-- Print Button -->
-                <button id="print-photo" class="dslr-btn" title="Print" disabled>
-                    <div class="btn-icon">
+                    </button>
+                    <span id="timer-display" class="timer-display">3s</span>
+                    <button id="timer-increase" class="dslr-btn timer-btn" aria-label="Increase Timer">
                         <svg viewBox="0 0 48 48" width="40" height="40">
-                            <rect x="10" y="20" width="28" height="14" rx="4" fill="#d0ebff" stroke="#228be6" stroke-width="2"/>
-                            <rect x="14" y="28" width="20" height="10" rx="2" fill="#fff"/>
-                            <rect x="16" y="32" width="16" height="4" rx="1" fill="#f1f3f5"/>
-                            <ellipse cx="24" cy="25" rx="10" ry="4" fill="#fff"/>
-                            <circle cx="18" cy="27" r="1.2" fill="#228be6"/>
-                            <circle cx="30" cy="27" r="1.2" fill="#228be6"/>
-                            <path d="M20 30q2 2 4 0" stroke="#228be6" stroke-width="2" fill="none"/>
+                            <path d="M12 24h24M24 12v24" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round"/>
                         </svg>
-                    </div>
-                    <div class="btn-label">Print</div>
-                </button>
-                <!-- Print All Photos -->
-                <button id="print-all-photos" class="dslr-btn" title="Print All" disabled>
-                    <div class="btn-icon">
-                        <svg viewBox="0 0 48 48" width="40" height="40">
-                            <rect x="12" y="26" width="24" height="12" rx="3" fill="#e7f5ff" stroke="#228be6" stroke-width="2"/>
-                            <rect x="10" y="18" width="28" height="12" rx="3" fill="#fff3bf" stroke="#fcc419" stroke-width="2"/>
-                            <rect x="14" y="10" width="20" height="12" rx="3" fill="#d3f9d8" stroke="#51cf66" stroke-width="2"/>
-                            <circle cx="24" cy="32" r="2" fill="#228be6"/>
-                            <circle cx="28" cy="32" r="2" fill="#228be6"/>
-                            <path d="M20 35q2 2 4 0" stroke="#228be6" stroke-width="2" fill="none"/>
-                        </svg>
-                    </div>
-                    <div class="btn-label">Print All</div>
-                </button>
-                <!-- Share Button -->
-                <button id="share-photo" class="dslr-btn" title="Share" disabled>
-                    <div class="btn-icon">
-                        <svg viewBox="0 0 48 48" width="40" height="40">
-                            <ellipse cx="24" cy="20" rx="10" ry="13" fill="#ffe3e3" stroke="#fa5252" stroke-width="2"/>
-                            <path d="M24 33v6" stroke="#fa5252" stroke-width="2"/>
-                            <path d="M24 36q-2 2 -4 0" stroke="#fa5252" stroke-width="2" fill="none"/>
-                            <path d="M19.5 20q2.5-2 5 0" stroke="#fa5252" stroke-width="2" fill="none"/>
-                            <circle cx="24" cy="24" r="2" fill="#fa5252"/>
-                        </svg>
-                    </div>
-                    <div class="btn-label">Share</div>
-                </button>
-                <!-- Retake Button -->
-                <button id="retake-photo" class="dslr-btn" title="Retake" style="display:none;">
-                    <div class="btn-icon">
-                        <svg viewBox="0 0 48 48" width="40" height="40">
-                            <circle cx="24" cy="24" r="20" fill="#fff3bf" stroke="#fab005" stroke-width="2"/>
-                            <path d="M24 8a16 16 0 1 1-11.31 27.31" stroke="#fab005" stroke-width="3" fill="none"/>
-                            <polygon points="16,33 9,32 14,27" fill="#fab005"/>
-                            <ellipse cx="28" cy="26" rx="1.8" ry="2.5" fill="#222"/>
-                            <ellipse cx="20" cy="26" rx="1.2" ry="1.5" fill="#222"/>
-                            <path d="M24 30q2 2 4 0" stroke="#222" stroke-width="2" fill="none"/>
-                        </svg>
-                    </div>
-                    <div class="btn-label">Retake</div>
-                </button>
-                <!-- Download Gallery Button -->
-                <button id="download-gallery" class="dslr-btn" title="Download All" style="display: none;">
-                    <div class="btn-icon">
-                        <svg viewBox="0 0 48 48" width="40" height="40">
-                            <rect x="8" y="8" width="32" height="32" rx="6" fill="#e7f5ff" stroke="#228be6" stroke-width="2"/>
-                            <rect x="16" y="10" width="16" height="8" rx="2" fill="#228be6"/>
-                            <rect x="16" y="32" width="16" height="4" rx="2" fill="#ffd43b"/>
-                            <circle cx="24" cy="26" r="2" fill="#228be6"/>
-                            <path d="M20 28q2 2 4 0" stroke="#228be6" stroke-width="2" fill="none"/>
-                        </svg>
-                    </div>
-                    <div class="btn-label">Save All</div>
+                    </button>
+                </div>
+
+                <button id="take-photo" class="dslr-btn take-photo-btn" aria-label="Take Photo">
+                    <svg viewBox="0 0 48 48" width="40" height="40">
+                        <path d="M18 10a4 4 0 1 0 0 8a4 4 0 0 0 0-8z" fill="#222"/>
+                        <path d="M24 4c-5.8 0-10.9 2.5-14.4 6.4c-.2.2-.3.5-.2.8c.2.3.5.4.8.2C15.9 7.6 19.8 6 24 6c5.8 0 10.9 2.5 14.4 6.4c.2.2.3.5.2.8c-.2.3-.5.4-.8.2C32.1 7.6 28.2 6 24 6z" fill="#222"/>
+                        <path d="M30 40c-2.8 0-5.3-1.4-6.8-3.6c-.2-.4-.7-.5-1.1-.3c-.4.2-.5.7-.3 1.1c2 3.2 5.5 5.3 9.2 5.3c2.8 0 5.3-1.4 6.8-3.6c.2-.4.7-.5 1.1-.3c.4.2.5.7.3 1.1c-2 3.2-5.5 5.3-9.2 5.3z" fill="#222"/>
+                    </svg>
                 </button>
             </div>
-        </div>
-        <!-- Gallery Sidebar (20%) -->
-        <aside class="gallery-sidebar">
-            <div class="gallery-title">Gallery</div>
-            <div class="gallery-photos" id="sidebar-gallery"></div>
+        </section>
+
+        <aside class="gallery-sidebar" id="gallery-sidebar">
+            <h2 class="gallery-title">Gallery</h2>
+            <div class="gallery-grid" id="gallery-grid">
+                </div>
         </aside>
-    </div>
+
+        <div id="photo-overlay" class="photo-overlay">
+            <div class="photo-result" id="photo-result">
+                <div class="photo-controls">
+                    <button id="close-photo" class="dslr-btn" title="Close" aria-label="Close Photo View">
+                        <div class="btn-icon">
+                            <svg viewBox="0 0 48 48" width="40" height="40">
+                                <path d="M12 12l24 24M12 36l24-24" stroke="#222" stroke-width="4" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="btn-label">Close</div>
+                    </button>
+                    <button id="download-photo" class="dslr-btn" title="Download" aria-label="Download Photo">
+                        <div class="btn-icon">
+                            <svg viewBox="0 0 48 48" width="40" height="40">
+                                <path d="M24 38L12 26h8V8h8v18h8L24 38zM24 38v4" stroke="#222" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="btn-label">Download</div>
+                    </button>
+                    <button id="share-photo" class="dslr-btn" title="Share" aria-label="Share Photo">
+                        <div class="btn-icon">
+                            <svg viewBox="0 0 48 48" width="40" height="40">
+                                <path d="M30 18a6 6 0 1 0 0-12a6 6 0 0 0 0 12zM18 30a6 6 0 1 0 0-12a6 6 0 0 0 0 12zM30 42a6 6 0 1 0 0-12a6 6 0 0 0 0 12z" fill="#222"/>
+                                <path d="M30 18l-12 12" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="btn-label">Share</div>
+                    </button>
+                    <button id="retake-photo" class="dslr-btn" title="Retake" aria-label="Retake Photo">
+                        <div class="btn-icon">
+                            <svg viewBox="0 0 48 48" width="40" height="40">
+                                <rect x="18" y="15" width="12" height="18" rx="1.2" ry="1.5" fill="#222"/>
+                                <path d="M24 30q2 2 4 0" stroke="#222" stroke-width="2" fill="none"/>
+                            </svg>
+                        </div>
+                        <div class="btn-label">Retake</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="print-overlay" class="photo-overlay">
+            <div class="composite-print-preview" id="composite-print-preview">
+                <img id="print-preview-img" alt="Print Preview">
+                <div class="photo-controls">
+                    <button id="close-print" class="dslr-btn" title="Close" aria-label="Close Print Preview">
+                        <div class="btn-icon">
+                            <svg viewBox="0 0 48 48" width="40" height="40">
+                                <path d="M12 12l24 24M12 36l24-24" stroke="#222" stroke-width="4" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="btn-label">Close</div>
+                    </button>
+                    <button id="print-start" class="dslr-btn" title="Print" aria-label="Print Photo">
+                        <div class="btn-icon">
+                            <svg viewBox="0 0 48 48" width="40" height="40">
+                                <path d="M12 24h24M12 36h24M24 12v24" stroke="#222" stroke-width="4" fill="none" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="btn-label">Print</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
     <script src="js/photobooth.js"></script>
 </body>
 </html>
