@@ -33,7 +33,8 @@ class PhotoboothApp {
         this.retakeBtn = document.getElementById('retake-photo');
         this.toggleVideoSizeBtn = document.getElementById('toggle-video-size');
         this.downloadGalleryBtn = document.getElementById('download-gallery');
-        this.photoGallery = document.getElementById('photo-gallery');
+        // Sidebar gallery
+        this.sidebarGallery = document.getElementById('sidebar-gallery');
     }
 
     bindEvents() {
@@ -92,8 +93,6 @@ class PhotoboothApp {
             });
             this.videoElement.style.display = 'block';
             this.capturedPhotoDiv.style.display = 'none';
-            this.photoGallery.style.display = 'none';
-            this.downloadGalleryBtn.style.display = 'none';
             this.enableCameraControls();
             if (this.isLargeVideo) {
                 this.videoElement.classList.remove('normal-size');
@@ -161,7 +160,6 @@ class PhotoboothApp {
                 this.instaxFrame.classList.remove('normal-size');
                 this.instaxFrame.classList.add('large-size');
             }
-            this.toggleVideoSizeBtn.textContent = '🔍 Shrink Video';
         } else {
             this.videoElement.classList.remove('large-size');
             this.videoElement.classList.add('normal-size');
@@ -169,7 +167,6 @@ class PhotoboothApp {
                 this.instaxFrame.classList.remove('large-size');
                 this.instaxFrame.classList.add('normal-size');
             }
-            this.toggleVideoSizeBtn.textContent = '🔍 Toggle Video Size';
         }
     }
 
@@ -189,7 +186,7 @@ class PhotoboothApp {
         this.enableCameraControls();
         this.currentPhotoIndex = 0;
         this.showPhoto(this.currentPhotoIndex);
-        this.updateGallery();
+        this.updateSidebarGallery();
         this.downloadGalleryBtn.style.display = 'inline-flex';
     }
 
@@ -276,7 +273,6 @@ class PhotoboothApp {
         if (!this.capturedPhotoBlobs[idx]) return;
         this.capturedPhotoDiv.style.display = 'block';
         this.videoElement.style.display = 'none';
-        this.photoGallery.style.display = 'flex';
         const photoURL = URL.createObjectURL(this.capturedPhotoBlobs[idx]);
         this.photoResult.src = photoURL;
         this.photoResult.onload = () => URL.revokeObjectURL(photoURL);
@@ -285,35 +281,29 @@ class PhotoboothApp {
         this.shareBtn.disabled = false;
         this.retakeBtn.style.display = 'block';
         this.takePhotoBtn.style.display = 'none';
-        this.updateGallery(idx);
+        this.updateSidebarGallery(idx);
     }
 
-    updateGallery(selectedIdx) {
+    updateSidebarGallery(selectedIdx) {
         if (!this.capturedPhotoBlobs.length) {
-            this.photoGallery.style.display = 'none';
+            this.sidebarGallery.innerHTML = '';
             return;
         }
-        this.photoGallery.innerHTML = '';
-        this.photoGallery.style.display = 'flex';
+        this.sidebarGallery.innerHTML = '';
         this.capturedPhotoBlobs.forEach((blob, i) => {
             const div = document.createElement('div');
             div.className = 'gallery-thumb';
+            if (selectedIdx === i) div.classList.add('selected');
             const img = document.createElement('img');
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `photobooth-photo-${i + 1}.jpg`;
-            link.textContent = 'Download';
-            img.src = link.href;
+            img.src = URL.createObjectURL(blob);
             img.alt = `Photo ${i + 1}`;
             img.title = `Photo ${i + 1}`;
             img.addEventListener('click', () => {
                 this.currentPhotoIndex = i;
                 this.showPhoto(i);
             });
-            if (selectedIdx === i) img.classList.add('selected');
             div.appendChild(img);
-            div.appendChild(link);
-            this.photoGallery.appendChild(div);
+            this.sidebarGallery.appendChild(div);
         });
     }
 
@@ -352,13 +342,13 @@ class PhotoboothApp {
         this.currentPhotoIndex = 0;
         this.capturedPhotoDiv.style.display = 'none';
         this.videoElement.style.display = 'block';
-        this.photoGallery.style.display = 'none';
         this.downloadGalleryBtn.style.display = 'none';
         this.printBtn.disabled = true;
         this.printAllBtn.disabled = true;
         this.shareBtn.disabled = true;
         this.retakeBtn.style.display = 'none';
         this.takePhotoBtn.style.display = 'block';
+        this.updateSidebarGallery();
     }
 
     async printPhoto() {

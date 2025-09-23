@@ -6,482 +6,288 @@
 }
 
 body {
-    font-family: 'Arial', sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
+    background: linear-gradient(135deg, #6dd5ed 0%, #f7797d 100%);
     height: 100vh;
     overflow: hidden;
     touch-action: manipulation;
 }
 
-/* Main container with 70/30 split */
+/* Main container: 80/20 horizontal split */
 .photobooth-container {
     display: flex;
+    flex-direction: row;
     height: 100vh;
     width: 100vw;
+    background: transparent;
+    gap: 0;
 }
 
-/* Camera section (70%) */
+/* Camera section (80%) */
 .camera-section {
-    flex: 0 0 70%;
+    flex: 0 0 80%;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.1);
+    padding: 40px 10px 110px 40px;
+    background: transparent;
+    position: relative;
 }
 
 /* Instax photo frame styling */
 .instax-frame {
     position: relative;
-    background: #ffffff;
-    padding: 20px 20px 60px 20px;
-    border-radius: 8px;
-    box-shadow: 
-        0 10px 30px rgba(0, 0, 0, 0.3),
-        inset 0 0 0 1px rgba(0, 0, 0, 0.1);
-    max-width: 90vw;
-    max-height: 90vh;
-    width: 1600px;
-    height: 1200px;
+    background: #fffbea;
+    padding: 36px 36px 110px 36px;
+    border-radius: 24px;
+    box-shadow: 0 10px 40px 0 rgba(0,0,0,0.25), 0 0 0 8px #ffe0e9;
+    width: 1100px;
+    max-width: 95%;
     aspect-ratio: 4/3;
-    transition: transform 0.3s ease;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
+    margin: 0 auto;
+    transition: transform 0.3s;
+    overflow: visible;
+}
+.instax-frame:hover {
+    transform: scale(1.01) rotate(-2deg);
+    box-shadow: 0 12px 50px 0 rgba(0,0,0,0.27), 0 0 0 10px #ffe0e9;
 }
 
-#camera-feed.normal-size {
+/* Camera inside Instax frame */
+#camera-feed {
     width: 100%;
     height: 100%;
-    max-width: 100%;
-    max-height: 100%;
-    transition: width 0.3s, height 0.3s;
-}
-#camera-feed.large-size {
-    width: 130%;
-    height: 130%;
-    max-width: none;
-    max-height: none;
-    z-index: 1;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(100,100,100,0.12);
+    object-fit: cover;
+    background: #ddd;
 }
 
-.instax-frame:hover {
-    transform: rotate(0deg) scale(1.02);
-}
-
-/* Remove default Instax label, handled in canvas via JS */
-.instax-frame::after {
-    content: "";
-    display: none;
-}
-
-#photo-canvas {
+/* Controls as a bottom sheet */
+.bottom-controls {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    width: calc(100% - 40px);
-    height: calc(100% - 80px);
-    display: none;
-    z-index: 2;
+    left: 50%;
+    bottom: 12px;
+    transform: translateX(-50%);
+    width: 98%;
+    max-width: 1020px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    z-index: 40;
+    background: rgba(255,255,255,0.95);
+    border-radius: 32px;
+    box-shadow: 0 8px 30px rgba(247, 121, 125, 0.09);
+    padding: 20px 30px 20px 30px;
+    gap: 28px;
+    min-height: 110px;
 }
 
-.captured-photo {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    width: calc(100% - 40px);
-    height: calc(100% - 80px);
-    border-radius: 4px;
-    overflow: hidden;
-    z-index: 3;
-    background: #fff;
+/* DSLR-styled round buttons with icons only */
+.dslr-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(145deg, #f5f7fa 0%, #c3cfe2 100%);
+    box-shadow: 0 4px 16px rgba(100,100,100,0.18), 0 0 0 4px #ffb6b9;
+    margin: 0 8px;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 2.2rem;
+    color: #444;
+    transition: all 0.18s;
+    position: relative;
 }
-#photo-result {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    border-radius: 4px;
-    background: #f0f0f0;
+.dslr-btn:active {
+    transform: scale(0.96);
+    box-shadow: 0 2px 8px #f7797d77;
+}
+.dslr-btn.selected,
+.dslr-btn:focus {
+    outline: 3px solid #f7797d;
+    background: linear-gradient(135deg, #f7797d 40%, #f5f7fa 100%);
+    color: #fff;
+}
+
+/* Example icon styling (override as needed) */
+.dslr-btn svg {
+    width: 34px;
+    height: 34px;
+    fill: currentColor;
     display: block;
 }
 
-/* Removed: Frame picker styles (no longer needed) */
-/* .frame-picker, .frame-picker-inner, .frame-thumb, ... */
-.frame-picker,
-.frame-picker-inner,
-.frame-thumb,
-.frame-thumb.selected,
-.frame-thumb:hover,
-.frame-icon,
-.frame-name,
-.frame-picker-label {
-    display: none !important;
+/* Gallery sidebar (right 20%) */
+.gallery-sidebar {
+    flex: 0 0 20%;
+    background: rgba(255,255,255,0.94);
+    box-shadow: -5px 0 17px 0 #f7797d18;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 36px 16px 36px 18px;
+    gap: 18px;
+    overflow-y: auto;
+    border-top-left-radius: 32px;
+    border-bottom-left-radius: 32px;
+    min-width: 200px;
+}
+
+.gallery-title {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #fd6e77;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+    text-align: center;
+}
+.gallery-photos {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    align-items: center;
+}
+.gallery-thumb {
+    width: 92px;
+    height: 68px;
+    background: #fffdfa;
+    border-radius: 11px;
+    box-shadow: 0 2px 8px #f7797d20;
+    overflow: hidden;
+    border: 2.5px solid #fd6e77;
+    transition: border 0.2s;
+}
+.gallery-thumb.selected, .gallery-thumb:hover {
+    border: 3.5px solid #f7797d;
+}
+.gallery-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 9px;
 }
 
 /* Countdown overlay */
 .countdown-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
-    z-index: 100;
+    border-radius: 24px;
+    z-index: 200;
 }
-
 #countdown-number {
     font-size: 120px;
     font-weight: bold;
-    color: white;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    color: #fff;
+    text-shadow: 2px 2px 18px #f7797d, 0 0 8px #fff;
     animation: countdown-pulse 1s ease-in-out;
 }
 
-@keyframes countdown-pulse {
-    0% { transform: scale(0.8); opacity: 0.5; }
-    50% { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-/* Control panel (30%) */
-.control-panel {
-    flex: 0 0 30%;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
-}
-
-.controls-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-}
-
-/* Timer section */
-.timer-section {
-    text-align: center;
-    margin-bottom: 5px;
-}
-
-.timer-section h3 {
-    font-size: 18px;
-    color: #333;
-    margin-bottom: 15px;
-    font-weight: 600;
-}
-
-.timer-controls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-}
-
-.timer-btn {
-    width: 50px;
-    height: 50px;
-    border: none;
-    border-radius: 50%;
-    background: #667eea;
-    color: white;
-    font-size: 24px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    touch-action: manipulation;
-}
-
-.timer-btn:hover {
-    background: #5a6fd8;
-    transform: scale(1.1);
-}
-
-.timer-btn:active {
-    transform: scale(0.95);
-}
-
-#timer-display {
-    font-size: 36px;
-    font-weight: bold;
-    color: #333;
-    min-width: 60px;
-    text-align: center;
-}
-
-/* Control buttons */
-.control-btn {
-    width: 200px;
-    height: 70px;
-    border: none;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    touch-action: manipulation;
-    text-align: center;
-}
-
-.control-btn span {
-    font-size: 24px;
-}
-
-.control-btn:active {
-    transform: scale(0.95);
-}
-
-.control-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none !important;
-}
-
-/* Button specific styles */
-.camera-switch {
-    background: linear-gradient(135deg, #74b9ff, #0984e3);
-    color: white;
-    box-shadow: 0 4px 15px rgba(116, 185, 255, 0.4);
-}
-
-.camera-switch:hover:not(:disabled) {
-    background: linear-gradient(135deg, #0984e3, #74b9ff);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(116, 185, 255, 0.6);
-}
-
-.take-photo {
-    background: linear-gradient(135deg, #00b894, #00a085);
-    color: white;
-    box-shadow: 0 4px 15px rgba(0, 184, 148, 0.4);
-}
-
-.take-photo:hover:not(:disabled) {
-    background: linear-gradient(135deg, #00a085, #00b894);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 184, 148, 0.6);
-}
-
-.print-btn {
-    background: linear-gradient(135deg, #fd79a8, #e84393);
-    color: white;
-    box-shadow: 0 4px 15px rgba(253, 121, 168, 0.4);
-}
-
-.print-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #e84393, #fd79a8);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(253, 121, 168, 0.6);
-}
-
-#print-all-photos {
-    margin-left: 10px;
-}
-
-.share-btn {
-    background: linear-gradient(135deg, #fdcb6e, #e17055);
-    color: white;
-    box-shadow: 0 4px 15px rgba(253, 203, 110, 0.4);
-}
-
-.share-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #e17055, #fdcb6e);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(253, 203, 110, 0.6);
-}
-
-.retake-btn {
-    background: linear-gradient(135deg, #a29bfe, #6c5ce7);
-    color: white;
-    box-shadow: 0 4px 15px rgba(162, 155, 254, 0.4);
-}
-
-.retake-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(162, 155, 254, 0.6);
-}
-
-.toggle-size-btn {
-    background: linear-gradient(135deg, #ffe082 40%, #ffd600 100%);
-    color: #333;
-    box-shadow: 0 4px 15px rgba(255, 214, 0, 0.15);
-}
-.toggle-size-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #ffd600 40%, #ffe082 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 214, 0, 0.3);
-}
-
-.download-gallery-btn {
-    background: linear-gradient(135deg, #81ecec, #00b894);
-    color: #222;
-    box-shadow: 0 4px 15px rgba(0, 184, 148, 0.15);
-}
-.download-gallery-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #00b894, #81ecec);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 184, 148, 0.2);
-}
-
-/* Gallery styles (thumbnails) */
-.photo-gallery {
-    position: fixed;
-    left: 0;
-    bottom: 0;
-    width: 100vw;
-    background: rgba(255,255,255,0.98);
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-    padding: 12px 5vw;
-    box-shadow: 0 -2px 20px #667eea44;
-    z-index: 10000;
-    justify-content: center;
-    align-items: center;
-}
-.photo-gallery .gallery-thumb {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-}
-.photo-gallery img {
-    width: 80px;
-    height: 60px;
-    object-fit: cover;
-    border-radius: 5px;
-    border: 2px solid #ccc;
-    background: #fff;
-}
-.photo-gallery a {
-    display: block;
-    font-size: 12px;
-    color: #2980b9;
-    text-decoration: underline;
-    margin-top: 2px;
-}
-
-/* Responsive adjustments for tablet/mobile */
-@media (max-width: 1024px) {
-    .instax-frame {
-        max-width: 98vw;
-        max-height: 85vh;
-        width: 95vw;
-        height: 60vw;
-        min-width: 300px;
-    }
-    
-    .control-panel {
-        padding: 20px 15px;
-    }
-    
-    .control-btn {
-        width: 180px;
-        height: 60px;
-        font-size: 14px;
-    }
-    
-    #countdown-number {
-        font-size: 100px;
-    }
-}
-
-@media (max-width: 768px) {
-    .photobooth-container {
-        flex-direction: column;
-    }
-    
-    .camera-section {
-        flex: 0 0 65%;
-    }
-    
-    .control-panel {
-        flex: 0 0 35%;
-        padding: 15px;
-    }
-    
-    .controls-grid {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
-    }
-    
-    .control-btn {
-        width: 120px;
-        height: 50px;
-        font-size: 12px;
-    }
-    
-    .timer-section {
-        width: 100%;
-        margin-bottom: 5px;
-    }
-}
-
-/* Loading and error states */
-.loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f8f9fa;
-    color: #666;
-    font-size: 18px;
-}
-
+/* Print preview vertical stack */
 .composite-print-preview {
     display: flex;
     flex-direction: column;
     align-items: center;
     background: white;
-    padding: 20px;
+    padding: 40px 10px;
+    border-radius: 24px;
+    box-shadow: 0 4px 20px #f7797d44;
+    gap: 24px;
+    width: 400px;
+    margin: 0 auto;
+}
+.composite-print-preview img {
+    width: 320px;
+    height: auto;
+    border-radius: 16px;
+    margin-bottom: 6px;
+    box-shadow: 0 2px 8px #6dd5ed44;
+}
+.composite-print-preview img:last-child {
+    margin-bottom: 0;
 }
 
-.error {
+/* Error and loading states */
+.loading, .error {
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 18px;
+    border-radius: 16px;
+    padding: 24px;
+    margin: 10px;
+}
+.loading {
+    background: #f8f9fa;
+    color: #666;
+}
+.error {
     background: #ffe6e6;
     color: #d63031;
-    font-size: 16px;
-    text-align: center;
-    padding: 20px;
 }
 
-/* Animation for photo capture */
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .instax-frame { width: 98vw; }
+    .bottom-controls { max-width: 92vw; }
+    .gallery-sidebar { min-width: 140px; }
+}
+@media (max-width: 900px) {
+    .photobooth-container { flex-direction: column; }
+    .camera-section, .gallery-sidebar { flex: 0 0 auto; width: 100vw; }
+    .gallery-sidebar {
+        flex-direction: row;
+        position: relative;
+        border-radius: 0 0 32px 32px;
+        box-shadow: 0 -5px 17px 0 #f7797d18;
+        padding: 8px 12px 12px 12px;
+        min-width: unset;
+        width: 100vw;
+        height: 120px;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+    .gallery-photos { flex-direction: row; gap: 8px; width: unset; }
+    .gallery-title { display: none; }
+}
+@media (max-width: 600px) {
+    .instax-frame { padding: 8px 3vw 80px 3vw; }
+    .bottom-controls { padding: 8px 2vw 8px 2vw; }
+    .dslr-btn { width: 54px; height: 54px; font-size: 1.35rem; }
+    .gallery-thumb { width: 56px; height: 42px; }
+    .composite-print-preview { width: 96vw; }
+    .composite-print-preview img { width: 80vw; }
+}
+
+/* Fun, rounded corners everywhere! */
+.instax-frame, .gallery-sidebar, .bottom-controls, .dslr-btn, .gallery-thumb, .composite-print-preview {
+    border-radius: 24px;
+}
+
+/* Animation for photo capture flash */
 .flash-effect {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0; width: 100%; height: 100%;
     background: white;
     z-index: 1000;
     opacity: 0;
     pointer-events: none;
     animation: camera-flash 0.3s ease-out;
 }
-
-@keyframes camera-flash {
-    0% { opacity: 0; }
-    50% { opacity: 0.8; }
-    100% { opacity: 0; }
+@keyframes camera-flash { 0% {opacity:0;} 50% {opacity:0.8;} 100% {opacity:0;} }
+@keyframes countdown-pulse {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
 }
