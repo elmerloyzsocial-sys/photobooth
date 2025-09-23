@@ -29,42 +29,38 @@
             </div>
 
             <div class="bottom-controls">
-                <button id="switch-camera" class="fun-btn" title="Switch Camera" aria-label="Switch Camera">
+                <button id="switch-camera" class="dslr-btn" title="Switch Camera" aria-label="Switch Camera">
                     <div class="btn-icon">
-                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M11 19l-9-9 9-9v4.5H21v9h-10z"></path>
+                        <svg viewBox="0 0 48 48" width="40" height="40">
+                            <path d="M12 18V6a2 2 0 0 1 2-2h20a2 2 0 0 1 2 2v12m0 0a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4V18h-8V6h-8v12h-4a2 2 0 0 1-2-2v-2" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M24 24a8 8 0 1 0 0 16a8 8 0 0 0 0-16z" stroke="#222" stroke-width="2" fill="none"/>
+                            <path d="M16 8h16m-8 4v-4" stroke="#222" stroke-width="2" fill="none"/>
                         </svg>
                     </div>
                     <div class="btn-label">Switch</div>
                 </button>
 
                 <div class="timer-controls">
-                    <button id="timer-decrease" class="fun-btn timer-btn" aria-label="Decrease Timer">
-                        <div class="btn-icon">
-                            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                        </div>
+                    <button id="timer-decrease" class="dslr-btn timer-btn" aria-label="Decrease Timer">
+                        <svg viewBox="0 0 48 48" width="40" height="40">
+                            <path d="M12 24h24" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round"/>
+                        </svg>
                     </button>
                     <span id="timer-display" class="timer-display">3s</span>
-                    <button id="timer-increase" class="fun-btn timer-btn" aria-label="Increase Timer">
-                        <div class="btn-icon">
-                            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                        </div>
+                    <button id="timer-increase" class="dslr-btn timer-btn" aria-label="Increase Timer">
+                        <svg viewBox="0 0 48 48" width="40" height="40">
+                            <path d="M12 24h24M24 12v24" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round"/>
+                        </svg>
                     </button>
                 </div>
 
-                <button id="take-photo" class="fun-btn take-photo-btn" aria-label="Take Photo">
-                    <div class="btn-icon">
-                        <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" stroke="none">
-                            <circle cx="12" cy="12" r="3.5"></circle>
-                            <path d="M18.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"></path>
-                            <path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM3 6h18v12H3z"></path>
-                        </svg>
-                    </div>
+                <button id="take-photo" class="dslr-btn take-photo-btn" aria-label="Take Photo">
+                    <svg viewBox="0 0 48 48" width="40" height="40">
+                        <path d="M24 4c-5.8 0-10.9 2.5-14.4 6.4c-.2.2-.3.5-.2.8c.2.3.5.4.8.2C15.9 7.6 19.8 6 24 6c5.8 0 10.9 2.5 14.4 6.4c.2.2.3.5.2.8c-.2.3-.5.4-.8.2C32.1 7.6 28.2 6 24 6z" fill="#222"/>
+                        <path d="M30 40c-2.8 0-5.3-1.4-6.8-3.6c-.2-.4-.7-.5-1.1-.3c-.4.2-.5.7-.3 1.1c2 3.2 5.5 5.3 9.2 5.3c2.8 0 5.3-1.4 6.8-3.6c.2-.4.7-.5 1.1-.3c.4.2.5.7.3 1.1c-2 3.2-5.5 5.3-9.2 5.3z" fill="#222"/>
+                        <circle cx="24" cy="24" r="18" fill="none" stroke="#222" stroke-width="2"/>
+                        <circle cx="24" cy="24" r="8" fill="none" stroke="#222" stroke-width="2"/>
+                    </svg>
                 </button>
             </div>
         </section>
@@ -79,41 +75,36 @@
             <div class="photo-result" id="photo-result">
                 <img id="viewed-photo" alt="Captured Photo">
                 <div class="photo-controls">
-                    <button id="close-photo" class="fun-btn" title="Close" aria-label="Close Photo View">
+                    <button id="close-photo" class="dslr-btn" title="Close" aria-label="Close Photo View">
                         <div class="btn-icon">
-                            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            <svg viewBox="0 0 48 48" width="40" height="40">
+                                <path d="M12 12l24 24M12 36l24-24" stroke="#222" stroke-width="4" stroke-linecap="round"/>
                             </svg>
                         </div>
                         <div class="btn-label">Close</div>
                     </button>
-                    <button id="download-photo" class="fun-btn" title="Download" aria-label="Download Photo">
+                    <button id="download-photo" class="dslr-btn" title="Download" aria-label="Download Photo">
                         <div class="btn-icon">
-                            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            <svg viewBox="0 0 48 48" width="40" height="40">
+                                <path d="M24 38L12 26h8V8h8v18h8L24 38zM24 38v4" stroke="#222" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </div>
                         <div class="btn-label">Download</div>
                     </button>
-                    <button id="share-photo" class="fun-btn" title="Share" aria-label="Share Photo">
+                    <button id="share-photo" class="dslr-btn" title="Share" aria-label="Share Photo">
                         <div class="btn-icon">
-                            <circle cx="18" cy="5" r="3"></circle>
-                            <circle cx="6" cy="12" r="3"></circle>
-                            <circle cx="18" cy="19" r="3"></circle>
-                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                            <svg viewBox="0 0 48 48" width="40" height="40">
+                                <path d="M30 18a6 6 0 1 0 0-12a6 6 0 0 0 0 12zM18 30a6 6 0 1 0 0-12a6 6 0 0 0 0 12zM30 42a6 6 0 1 0 0-12a6 6 0 0 0 0 12z" fill="#222"/>
+                                <path d="M30 18l-12 12" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round"/>
+                            </svg>
                         </div>
                         <div class="btn-label">Share</div>
                     </button>
-                    <button id="retake-photo" class="fun-btn" title="Retake" aria-label="Retake Photo">
+                    <button id="retake-photo" class="dslr-btn" title="Retake" aria-label="Retake Photo">
                         <div class="btn-icon">
-                            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="1 4 1 10 7 10"></polyline>
-                                <polyline points="23 20 23 14 17 14"></polyline>
-                                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                            <svg viewBox="0 0 48 48" width="40" height="40">
+                                <rect x="18" y="15" width="12" height="18" rx="1.2" ry="1.5" fill="#222"/>
+                                <path d="M24 30q2 2 4 0" stroke="#222" stroke-width="2" fill="none"/>
                             </svg>
                         </div>
                         <div class="btn-label">Retake</div>
