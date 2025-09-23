@@ -488,7 +488,7 @@ class PhotoboothApp {
 
         // Margins and spacing
         const border = 32; // px, outer white border
-        const gap = 20; // px, between photos
+        const gap = 40; // 20px defualt, between photos
 
         // Calculate photo area
         const n = images.length;
