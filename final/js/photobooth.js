@@ -323,7 +323,7 @@ class PhotoboothApp {
         ctx.lineWidth = 1;
         ctx.strokeRect(20, 20, width - 40, height - 80);
         ctx.fillStyle = '#666666';
-        ctx.font = 'bold 20px Arial';
+        ctx.font = "bold 28px 'Fredoka One', 'Comic Sans MS', cursive";
         ctx.textAlign = 'right';
         ctx.fillText('Thank you for celebrating with us', width - 25, height - 20);
     }
