@@ -472,7 +472,7 @@ class PhotoboothApp {
         }
     }
 
-    // UPDATED PRINT ALL FOR 4x6 INCHES AT 300DPI
+    // UPDATED PRINT ALL FOR 4x4 INCHES AT 300DPI WITH INDIVIDUAL PHOTO BORDER
     async printAllPhotos() {
         if (!this.capturedPhotoBlobs.length) return;
 
@@ -481,14 +481,15 @@ class PhotoboothApp {
             this.capturedPhotoBlobs.slice(0, 4).map(blob => this.loadImageFromBlob(blob))
         );
 
-        // 4x6 inches at 300 DPI
+        // 4x4 inches at 300 DPI (square)
         const DPI = 300;
         const printWidth = 4 * DPI; // 1200px
         const printHeight = 4 * DPI; // 1200px
 
         // Margins and spacing
         const border = 32; // px, outer white border
-        const gap = 40; // 20px defualt, between photos
+        const gap = 40; // px, between photos
+        const frameMargin = 18; // px, border around each photo
 
         // Calculate photo area
         const n = images.length;
@@ -503,7 +504,7 @@ class PhotoboothApp {
         ctx.fillStyle = "#FFFAE6";
         ctx.fillRect(0, 0, printWidth, printHeight);
 
-        // Draw and center each photo
+        // Draw and center each photo with its own border
         let y = border;
         images.forEach((img, i) => {
             // Maintain aspect ratio, fit within photoWidth x photoHeight
@@ -516,6 +517,17 @@ class PhotoboothApp {
                 targetWidth = Math.min(photoWidth, Math.floor(photoHeight * imgAspect));
             }
             const x = border + Math.floor((photoWidth - targetWidth) / 2);
+
+            // Draw border behind each photo
+            ctx.fillStyle = "#fff"; // photo border color (white)
+            ctx.fillRect(
+                x - frameMargin,
+                y - frameMargin,
+                targetWidth + 2 * frameMargin,
+                targetHeight + 2 * frameMargin
+            );
+
+            // Draw photo
             ctx.drawImage(img, x, y, targetWidth, targetHeight);
             y += photoHeight + gap;
         });
@@ -531,12 +543,12 @@ class PhotoboothApp {
                     <title>Print All Photos</title>
                     <style>
                         @page {
-                            size: 4in 6in;
+                            size: 4in 4in;
                             margin: 0;
                         }
                         html, body {
                             width: 4in;
-                            height: 6in;
+                            height: 4in;
                             margin: 0;
                             padding: 0;
                             background: white;
@@ -620,7 +632,28 @@ class PhotoboothApp {
 
     // --- Instax Overlay Message Functions ---
 
-    
+    getOverlayVerses() {
+        return [
+            "The joy of the Lord is your strength. - Nehemiah 8:10",
+            "This is the day that the Lord has made; let us rejoice and be glad in it. - Psalm 118:24",
+            "Love is patient, love is kind. - 1 Corinthians 13:4",
+            "Let all that you do be done in love. - 1 Corinthians 16:14",
+            "Respect is love in action.",
+            "Smile—God loves you!",
+            "Let your heart be full of joy!",
+            "Treat others with love and respect, always.",
+            "Home is wherever I’m with you.",
+            "Thank you for raising me with faith and love."
+        ];
+    }
+
+    updateInstaxOverlayMessage() {
+        const verses = this.getOverlayVerses();
+        const verse = verses[Math.floor(Math.random() * verses.length)];
+        if (this.instaxMessage) this.instaxMessage.textContent = verse;
+    }
+
+    startOverlayMessageRotation() {
         this.updateInstaxOverlayMessage();
         if (this.overlayMessageInterval) clearInterval(this.overlayMessageInterval);
         // Change message every 10 seconds
