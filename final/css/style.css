@@ -329,3 +329,28 @@ body {
     50% { transform: scale(1.2); opacity: 1; }
     100% { transform: scale(1); opacity: 1; }
 }
+
+.dslr-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* keep your existing padding and size */
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-label {
+  font-size: 0.7rem;
+  color: #888;
+  margin-top: 2px;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
+  letter-spacing: 0.01em;
+}
