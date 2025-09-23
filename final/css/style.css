@@ -41,8 +41,8 @@ body {
         inset 0 0 0 1px rgba(0, 0, 0, 0.1);
     max-width: 90vw;
     max-height: 90vh;
-    width: 600px;
-    height: 450px;
+    width: 1600px;
+    height: 1200px;
     aspect-ratio: 4/3;
     transition: transform 0.3s ease;
     display: flex;
@@ -291,6 +291,10 @@ body {
     box-shadow: 0 6px 20px rgba(253, 121, 168, 0.6);
 }
 
+#print-all-photos {
+    margin-left: 10px;
+}
+
 .share-btn {
     background: linear-gradient(135deg, #fdcb6e, #e17055);
     color: white;
@@ -441,6 +445,14 @@ body {
     background: #f8f9fa;
     color: #666;
     font-size: 18px;
+}
+
+.composite-print-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: white;
+    padding: 20px;
 }
 
 .error {

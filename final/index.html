@@ -2,38 +2,131 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instax Photobooth</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div class="photobooth-container">
-        <div class="instax-frame normal-size">
-            <video id="camera-feed" class="normal-size" autoplay playsinline></video>
+        <!-- Camera Display Area (70%) -->
+        <div class="camera-section">
+            <div class="instax-frame">
+                <video
+                    id="camera-feed"
+                    autoplay
+                    playsinline
+                    class="normal-size"
+                ></video>
+                <canvas id="photo-canvas" style="display: none;"></canvas>
+                <div
+                    id="captured-photo"
+                    class="captured-photo"
+                    style="display: none;"
+                >
+                    <img id="photo-result" alt="Captured photo">
+                </div>
+                <!-- Removed Frame picker UI -->
+                <div
+                    id="countdown-overlay"
+                    class="countdown-overlay"
+                    style="display: none;"
+                >
+                    <span id="countdown-number">3</span>
+                </div>
+            </div>
         </div>
-        <div id="countdown-overlay">
-            <span id="countdown-number"></span>
+
+        <!-- Control Panel (30%) -->
+        <div class="control-panel">
+            <div class="controls-grid">
+                <!-- Timer Controls -->
+                <div class="timer-section">
+                    <h3>Timer</h3>
+                    <div class="timer-controls">
+                        <button id="timer-decrease" class="timer-btn">-</button>
+                        <span id="timer-display">3</span>
+                        <button id="timer-increase" class="timer-btn">+</button>
+                    </div>
+                </div>
+
+                <!-- Camera Switch -->
+                <button id="switch-camera" class="control-btn camera-switch">
+                    <span>📷</span>
+                    Switch Camera
+                </button>
+
+                <!-- Take Photo (now takes 4 in a row) -->
+                <button id="take-photo" class="control-btn take-photo">
+                    <span>📸</span>
+                    Take 4 Photos
+                </button>
+
+                <!-- Print Button -->
+                <button
+                    id="print-photo"
+                    class="control-btn print-btn"
+                    disabled
+                >
+                    <span>🖨️</span>
+                    Print
+                </button>
+				
+				<!-- Print All Button (NEW, insert here) -->
+				<button
+					id="print-all-photos"
+					class="control-btn print-btn"
+					disabled
+				>
+					<span>🖨️</span>
+					Print All
+				</button>
+
+                <!-- Share Button -->
+                <button
+                    id="share-photo"
+                    class="control-btn share-btn"
+                    disabled
+                >
+                    <span>📤</span>
+                    Share
+                </button>
+
+                <!-- Retake Button -->
+                <button
+                    id="retake-photo"
+                    class="control-btn retake-btn"
+                    style="display: none;"
+                >
+                    <span>🔄</span>
+                    Retake
+                </button>
+
+                <!-- Toggle Video Size Button -->
+                <button
+                    id="toggle-video-size"
+                    class="control-btn toggle-size-btn"
+                    type="button"
+                >
+                    <span>🔍</span>
+                    Toggle Video Size
+                </button>
+
+                <!-- Gallery Download Button -->
+                <button
+                    id="download-gallery"
+                    class="control-btn download-gallery-btn"
+                    style="display: none;"
+                >
+                    <span>💾</span>
+                    Save All Photos
+                </button>
+            </div>
         </div>
-        <canvas id="photo-canvas" style="display:none"></canvas>
-        <div id="captured-photo" style="display:none">
-            <img id="photo-result" src="" alt="Captured Photo">
-        </div>
-        <div id="photo-actions">
-            <button id="switch-camera" class="control-btn" type="button">🔄 Switch Camera</button>
-            <button id="take-photo" class="control-btn" type="button">📸 Take Photo</button>
-            <span>
-                <button id="timer-decrease" class="control-btn" type="button">-</button>
-                <span id="timer-display">3</span>
-                <button id="timer-increase" class="control-btn" type="button">+</button>
-            </span>
-            <button id="toggle-video-size" class="control-btn" type="button">🔍 Toggle Video Size</button>
-            <button id="print-photo" class="control-btn" type="button">🖨️ Print</button>
-            <button id="print-all-photos" class="control-btn" type="button">🖨️ Print All</button>
-            <button id="share-photo" class="control-btn" type="button">📤 Share</button>
-            <button id="retake-photo" class="control-btn" style="display: none;" type="button">🔄 Retake</button>
-            <button id="download-gallery" class="control-btn" style="display: none;" type="button">⬇️ Download All</button>
-        </div>
-        <div id="photo-gallery"></div>
     </div>
-    <script src="photobooth.js"></script>
+
+    <!-- Gallery Thumbnails -->
+    <div id="photo-gallery" class="photo-gallery" style="display: none;"></div>
+
+    <script src="js/photobooth.js"></script>
 </body>
 </html>
