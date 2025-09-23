@@ -319,14 +319,84 @@ class PhotoboothApp {
     }
 
     addThankYouFrame(ctx, width, height) {
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(20, 20, width - 40, height - 80);
-        ctx.fillStyle = '#666666';
-        ctx.font = "bold 28px 'Fredoka One', 'Comic Sans MS', cursive";
-        ctx.textAlign = 'right';
-        ctx.fillText('Thank you for celebrating with us', width - 25, height - 20);
-    }
+    // Array of Bible verses/phrases (add as many as you like)
+    const verses = [
+  // Bible verses about joy
+  "The joy of the Lord is your strength. - Nehemiah 8:10",
+  "This is the day that the Lord has made; let us rejoice and be glad in it. - Psalm 118:24",
+  "Rejoice in the Lord always. I will say it again: Rejoice! - Philippians 4:4",
+  "You make known to me the path of life; in your presence there is fullness of joy. - Psalm 16:11",
+  "You have turned my mourning into joyful dancing. - Psalm 30:11",
+  "A cheerful heart is good medicine. - Proverbs 17:22",
+  "Shout for joy to the Lord, all the earth. - Psalm 100:1",
+  "May the God of hope fill you with all joy and peace as you trust in him. - Romans 15:13",
+  "I have told you this so that my joy may be in you and that your joy may be complete. - John 15:11",
+  "Those who sow with tears will reap with songs of joy. - Psalm 126:5",
+  // Joyful phrases
+  "Let your heart be full of joy!",
+  "Smile—God loves you!",
+  "Choose joy every day.",
+  "Joy is a gift—share it!",
+  "Today is a day for joyful memories!",
+   // Love
+  "Above all, love each other deeply, because love covers over a multitude of sins. - 1 Peter 4:8",
+  "Let all that you do be done in love. - 1 Corinthians 16:14",
+  "Love is patient, love is kind. - 1 Corinthians 13:4",
+  "And now these three remain: faith, hope and love. But the greatest of these is love. - 1 Corinthians 13:13",
+  "We love because He first loved us. - 1 John 4:19",
+  "Let us love one another, for love comes from God. - 1 John 4:7",
+  // Respect
+  "Be devoted to one another in love. Honor one another above yourselves. - Romans 12:10",
+  "Show proper respect to everyone, love the family of believers, fear God. - 1 Peter 2:17",
+  "Honor your father and your mother. - Exodus 20:12",
+  "Do to others as you would have them do to you. - Luke 6:31",
+  "Encourage one another and build each other up. - 1 Thessalonians 5:11",
+  "A friend loves at all times. - Proverbs 17:17",
+  // Phrases
+  "Respect is love in action.",
+  "Kindness is a language the deaf can hear and the blind can see.",
+  "Love and respect make a family strong.",
+  "Treat others with love and respect, always.",
+  "Where there is love, there is respect.",
+  "Respecting each other brings us closer together.",
+  "Let love and respect guide your heart.",
+];
+
+    // Pick a random verse/phrase
+    const verse = verses[Math.floor(Math.random() * verses.length)];
+
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(20, 20, width - 40, height - 80);
+
+    // Use a playful font if you have it loaded, otherwise fallback
+    ctx.fillStyle = '#666666';
+    ctx.font = "bold 20px 'Fredoka One', 'Comic Sans MS', cursive, Arial";
+    ctx.textAlign = 'center';
+
+    // Draw the verse, wrapping if it's too long
+    const maxWidth = width - 50;
+    const lines = [];
+    let currentLine = '';
+    verse.split(' ').forEach(word => {
+        const testLine = currentLine + (currentLine ? ' ' : '') + word;
+        if (ctx.measureText(testLine).width > maxWidth) {
+            lines.push(currentLine);
+            currentLine = word;
+        } else {
+            currentLine = testLine;
+        }
+    });
+    if (currentLine) lines.push(currentLine);
+
+    // Draw lines above the bottom padding
+    const lineHeight = 24;
+    let y = height - 20 - (lines.length - 1) * lineHeight;
+    lines.forEach(line => {
+        ctx.fillText(line, width / 2, y);
+        y += lineHeight;
+    });
+}
 
     createFlashEffect() {
         const flash = document.createElement('div');
