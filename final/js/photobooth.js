@@ -395,32 +395,52 @@ class PhotoboothApp {
         }
     }
 
+    // UPDATED PRINT ALL FOR 4x6 INCHES AT 300DPI
     async printAllPhotos() {
         if (!this.capturedPhotoBlobs.length) return;
 
-        // Load all images as HTMLImageElements
+        // Load up to 4 images as HTMLImageElements
         const images = await Promise.all(
-            this.capturedPhotoBlobs.map(blob => this.loadImageFromBlob(blob))
+            this.capturedPhotoBlobs.slice(0, 4).map(blob => this.loadImageFromBlob(blob))
         );
 
-        // Assume all photo canvases are the same size
-        const photoWidth = images[0].width;
-        const photoHeight = images[0].height;
-        const gap = 20; // px gap between photos
+        // 4x6 inches at 300 DPI
+        const DPI = 300;
+        const printWidth = 4 * DPI; // 1200px
+        const printHeight = 6 * DPI; // 1800px
 
-        const compositeWidth = photoWidth;
-        const compositeHeight = (photoHeight * images.length) + gap * (images.length - 1);
+        // Margins and spacing
+        const border = 32; // px, outer white border
+        const gap = 20; // px, between photos
+
+        // Calculate photo area
+        const n = images.length;
+        const availableHeight = printHeight - (2 * border) - (gap * (n - 1));
+        const photoHeight = Math.floor(availableHeight / n);
+        const photoWidth = printWidth - 2 * border;
 
         // Prepare composite canvas
-        this.compositeCanvas.width = compositeWidth;
-        this.compositeCanvas.height = compositeHeight;
+        this.compositeCanvas.width = printWidth;
+        this.compositeCanvas.height = printHeight;
         const ctx = this.compositeCanvas.getContext('2d');
         ctx.fillStyle = "#fff";
-        ctx.fillRect(0, 0, compositeWidth, compositeHeight);
+        ctx.fillRect(0, 0, printWidth, printHeight);
 
-        // Draw each photo
+        // Draw and center each photo
+        let y = border;
         images.forEach((img, i) => {
-            ctx.drawImage(img, 0, i * (photoHeight + gap), photoWidth, photoHeight);
+            // Maintain aspect ratio, fit within photoWidth x photoHeight
+            let imgAspect = img.width / img.height;
+            let targetWidth = photoWidth;
+            let targetHeight = photoHeight;
+            if (img.width > img.height) {
+                targetHeight = Math.min(photoHeight, Math.floor(photoWidth / imgAspect));
+            } else {
+                targetWidth = Math.min(photoWidth, Math.floor(photoHeight * imgAspect));
+            }
+            const x = border + Math.floor((photoWidth - targetWidth) / 2);
+            ctx.drawImage(img, x, y, targetWidth, targetHeight);
+            y += photoHeight + gap;
         });
 
         // Print the composite
@@ -433,24 +453,31 @@ class PhotoboothApp {
                 <head>
                     <title>Print All Photos</title>
                     <style>
-                        body {
-                            background: white;
+                        @page {
+                            size: 4in 6in;
                             margin: 0;
-                            padding: 20px;
+                        }
+                        html, body {
+                            width: 4in;
+                            height: 6in;
+                            margin: 0;
+                            padding: 0;
+                            background: white;
+                        }
+                        body {
                             display: flex;
                             justify-content: center;
-                            align-items: flex-start;
+                            align-items: center;
                             min-height: 100vh;
                         }
                         img {
-                            display: block;
-                            max-width: 100%;
+                            width: 100%;
                             height: auto;
-                            margin: 0 auto;
+                            display: block;
                             background: white;
                         }
                         @media print {
-                            body { padding: 0; }
+                            body { margin: 0; padding: 0; }
                             img { box-shadow: none; border: none; }
                         }
                     </style>
