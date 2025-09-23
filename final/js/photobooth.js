@@ -620,29 +620,7 @@ class PhotoboothApp {
 
     // --- Instax Overlay Message Functions ---
 
-    getOverlayVerses() {
-        // Put your favorite verses/phrases for overlay here (reuse the ones from addThankYouFrame or make a new selection)
-        return [
-            "The joy of the Lord is your strength. - Nehemiah 8:10",
-            "This is the day that the Lord has made; let us rejoice and be glad in it. - Psalm 118:24",
-            "Love is patient, love is kind. - 1 Corinthians 13:4",
-            "Let all that you do be done in love. - 1 Corinthians 16:14",
-            "Respect is love in action.",
-            "Smile—God loves you!",
-            "Let your heart be full of joy!",
-            "Treat others with love and respect, always.",
-            "Home is wherever I’m with you.",
-            "Thank you for raising me with faith and love."
-        ];
-    }
-
-    updateInstaxOverlayMessage() {
-        const verses = this.getOverlayVerses();
-        const verse = verses[Math.floor(Math.random() * verses.length)];
-        if (this.instaxMessage) this.instaxMessage.textContent = verse;
-    }
-
-    startOverlayMessageRotation() {
+    
         this.updateInstaxOverlayMessage();
         if (this.overlayMessageInterval) clearInterval(this.overlayMessageInterval);
         // Change message every 10 seconds
