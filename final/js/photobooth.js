@@ -5,9 +5,9 @@ class PhotoboothApp {
         this.timerSeconds = 3;
         this.isCountingDown = false;
         this.isLargeVideo = false;
-
         this.capturedPhotoBlobs = [];
         this.currentPhotoIndex = 0;
+        this.compositeCanvas = document.createElement('canvas');
 
         this.initializeElements();
         this.bindEvents();
@@ -28,6 +28,7 @@ class PhotoboothApp {
         this.switchCameraBtn = document.getElementById('switch-camera');
         this.takePhotoBtn = document.getElementById('take-photo');
         this.printBtn = document.getElementById('print-photo');
+        this.printAllBtn = document.getElementById('print-all-photos');
         this.shareBtn = document.getElementById('share-photo');
         this.retakeBtn = document.getElementById('retake-photo');
         this.toggleVideoSizeBtn = document.getElementById('toggle-video-size');
@@ -42,6 +43,7 @@ class PhotoboothApp {
         this.takePhotoBtn.addEventListener('click', () => this.startPhotoSequence());
         this.retakeBtn.addEventListener('click', () => this.retakePhotos());
         this.printBtn.addEventListener('click', () => this.printPhoto());
+        this.printAllBtn.addEventListener('click', () => this.printAllPhotos());
         this.shareBtn.addEventListener('click', () => this.sharePhoto());
         this.toggleVideoSizeBtn.addEventListener('click', () => this.toggleVideoSize());
         this.downloadGalleryBtn.addEventListener('click', () => this.downloadGallery());
@@ -67,7 +69,6 @@ class PhotoboothApp {
             const devices = await navigator.mediaDevices.enumerateDevices();
             const videoDevices = devices.filter(device => device.kind === 'videoinput');
             if (videoDevices.length === 0) {
-                console.warn('No camera devices found');
                 this.handleCameraError(new Error('No camera devices found'));
                 return;
             }
@@ -94,7 +95,6 @@ class PhotoboothApp {
             this.photoGallery.style.display = 'none';
             this.downloadGalleryBtn.style.display = 'none';
             this.enableCameraControls();
-            // Apply correct frame size class
             if (this.isLargeVideo) {
                 this.videoElement.classList.remove('normal-size');
                 this.videoElement.classList.add('large-size');
@@ -173,7 +173,6 @@ class PhotoboothApp {
         }
     }
 
-    // --- Main photo sequence logic ---
     async startPhotoSequence() {
         if (this.isCountingDown) return;
         this.isCountingDown = true;
@@ -184,7 +183,7 @@ class PhotoboothApp {
         for (let i = 0; i < numPhotos; i++) {
             await this.runCountdown();
             await this.capturePhotoToBlob();
-            if (i < numPhotos - 1) await this.wait(600); // Short pause between shots
+            if (i < numPhotos - 1) await this.wait(600);
         }
         this.isCountingDown = false;
         this.enableCameraControls();
@@ -262,7 +261,6 @@ class PhotoboothApp {
                     ctx.drawImage(video, drawX, drawY, drawWidth, drawHeight);
                 }
                 ctx.restore();
-                // Always use the single "thank you" frame style
                 this.addThankYouFrame(ctx, frameWidth, frameHeight);
                 this.canvasElement.toBlob(blob => {
                     this.capturedPhotoBlobs.push(blob);
@@ -274,7 +272,6 @@ class PhotoboothApp {
         });
     }
 
-    // --- Gallery, Preview, and Save ---
     showPhoto(idx) {
         if (!this.capturedPhotoBlobs[idx]) return;
         this.capturedPhotoDiv.style.display = 'block';
@@ -284,10 +281,10 @@ class PhotoboothApp {
         this.photoResult.src = photoURL;
         this.photoResult.onload = () => URL.revokeObjectURL(photoURL);
         this.printBtn.disabled = false;
+        this.printAllBtn.disabled = false;
         this.shareBtn.disabled = false;
         this.retakeBtn.style.display = 'block';
         this.takePhotoBtn.style.display = 'none';
-        // Gallery highlight
         this.updateGallery(idx);
     }
 
@@ -313,7 +310,7 @@ class PhotoboothApp {
                 this.currentPhotoIndex = i;
                 this.showPhoto(i);
             });
-            if (selectedIdx === i) img.style.border = '3px solid #6c5ce7';
+            if (selectedIdx === i) img.classList.add('selected');
             div.appendChild(img);
             div.appendChild(link);
             this.photoGallery.appendChild(div);
@@ -331,7 +328,6 @@ class PhotoboothApp {
         });
     }
 
-    // --- Frame Drawing: Only the "Thank You" frame style remains ---
     addThankYouFrame(ctx, width, height) {
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
         ctx.lineWidth = 1;
@@ -359,6 +355,7 @@ class PhotoboothApp {
         this.photoGallery.style.display = 'none';
         this.downloadGalleryBtn.style.display = 'none';
         this.printBtn.disabled = true;
+        this.printAllBtn.disabled = true;
         this.shareBtn.disabled = true;
         this.retakeBtn.style.display = 'none';
         this.takePhotoBtn.style.display = 'block';
@@ -406,6 +403,84 @@ class PhotoboothApp {
         } catch (error) {
             alert('Failed to print photo. Please try again.');
         }
+    }
+
+    async printAllPhotos() {
+        if (!this.capturedPhotoBlobs.length) return;
+
+        // Load all images as HTMLImageElements
+        const images = await Promise.all(
+            this.capturedPhotoBlobs.map(blob => this.loadImageFromBlob(blob))
+        );
+
+        // Assume all photo canvases are the same size
+        const photoWidth = images[0].width;
+        const photoHeight = images[0].height;
+        const gap = 20; // px gap between photos
+
+        const compositeWidth = photoWidth;
+        const compositeHeight = (photoHeight * images.length) + gap * (images.length - 1);
+
+        // Prepare composite canvas
+        this.compositeCanvas.width = compositeWidth;
+        this.compositeCanvas.height = compositeHeight;
+        const ctx = this.compositeCanvas.getContext('2d');
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, compositeWidth, compositeHeight);
+
+        // Draw each photo
+        images.forEach((img, i) => {
+            ctx.drawImage(img, 0, i * (photoHeight + gap), photoWidth, photoHeight);
+        });
+
+        // Print the composite
+        this.compositeCanvas.toBlob((blob) => {
+            const photoURL = URL.createObjectURL(blob);
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Print All Photos</title>
+                    <style>
+                        body {
+                            background: white;
+                            margin: 0;
+                            padding: 20px;
+                            display: flex;
+                            justify-content: center;
+                            align-items: flex-start;
+                            min-height: 100vh;
+                        }
+                        img {
+                            display: block;
+                            max-width: 100%;
+                            height: auto;
+                            margin: 0 auto;
+                            background: white;
+                        }
+                        @media print {
+                            body { padding: 0; }
+                            img { box-shadow: none; border: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <img src="${photoURL}" alt="All Photobooth Photos" onload="window.print(); window.close();">
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }, 'image/png');
+    }
+
+    loadImageFromBlob(blob) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = URL.createObjectURL(blob);
+        });
     }
 
     async sharePhoto() {
