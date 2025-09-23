@@ -484,7 +484,7 @@ class PhotoboothApp {
         // 4x6 inches at 300 DPI
         const DPI = 300;
         const printWidth = 4 * DPI; // 1200px
-        const printHeight = 6 * DPI; // 1800px
+        const printHeight = 4 * DPI; // 1200px
 
         // Margins and spacing
         const border = 32; // px, outer white border
