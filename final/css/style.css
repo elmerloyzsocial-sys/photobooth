@@ -76,95 +76,25 @@ body {
 /* Instax photo frame styling */
 .instax-frame {
     position: relative;
-    background: #fff;
-    /* Standard Instax size ratio: 62mm x 99mm actual photo area, 54mm x 86mm total (credit-card size) */
-    width: 320px; /* adjust as needed, this is for reference */
-    aspect-ratio: 54/86;
-    /* Centering and spacing */
-    margin: 0 auto;
-    box-shadow:
-        0 8px 24px rgba(0,0,0,0.23),
-        0 0 0 2.5px #e1e1e1;
-    border-radius: 16px;
-    /* Border: Top, Left, Right = thin; Bottom = thick for writing area */
-    border: 18px solid #fff;
-    border-bottom-width: 48px;
-    overflow: hidden;
+    background: #fffbea;
+    padding: 36px 36px 110px 36px;
+    border-radius: 24px;
+    box-shadow: 0 10px 40px 0 rgba(0,0,0,0.25), 0 0 0 8px #ffe0e9;
+    width: 1100px;
+    max-width: 90%; /* default max-width is 95% */
+    aspect-ratio: 4/3;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: box-shadow 0.2s;
+    margin: 0 auto;
+    transition: transform 0.3s;
+    overflow: visible;
 }
-
 .instax-frame:hover {
-    box-shadow:
-        0 12px 36px rgba(0,0,0,0.28),
-        0 0 0 4px #eaeaea;
-    transform: scale(1.02) rotate(-1deg);
+    transform: scale(1.01) rotate(-2deg);
+    box-shadow: 0 12px 50px 0 rgba(0,0,0,0.27), 0 0 0 10px #ffe0e9;
 }
 
-.instax-frame-border {
-    position: absolute;
-    top: 2.5%;
-    left: 2.5%;
-    width: 95%;
-    height: 87%;
-    border: 12px solid #fff;
-    border-bottom: 38px solid #fff; /* Thicker bottom */
-    border-radius: 18px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.25), 0 2px 12px 2px #d1d1d1;
-    box-sizing: border-box;
-    background: 
-        repeating-linear-gradient(135deg, #fff 0 8px, #f6f6f6 8px 16px),
-        url('img/paper-texture.png'); /* Add this image for realism */
-}
-
-/* Shine effect: */
-.instax-frame-border::after {
-    content: "";
-    display: block;
-    position: absolute;
-    top: 10px; left: 10px;
-    width: 60%; height: 20px;
-    background: linear-gradient(90deg, rgba(255,255,255,0.33), rgba(255,255,255,0));
-    border-radius: 8px;
-    pointer-events: none;
-}
-.instax-frame::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    bottom: 24px;
-    transform: translateX(-50%);
-    width: 60%;
-    height: 14px;
-    border-radius: 14px 14px 20px 20px;
-    background: linear-gradient(90deg, #fff6, #fff0 80%);
-    opacity: 0.7;
-    pointer-events: none;
-}
-.instax-label {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 16px;
-    height: 28px;
-    text-align: center;
-    font-family: 'Permanent Marker', 'Comic Sans MS', cursive, Arial, sans-serif;
-    font-size: 1.1rem;
-    color: #888;
-    letter-spacing: 0.02em;
-    pointer-events: none;
-    user-select: none;
-    opacity: 0.8;
-}
-.instax-photo-area {
-    width: 100%;
-    height: 100%;
-    border-radius: 8px;
-    object-fit: cover;
-    background: #f7f7f7;
-}
 /* Camera inside Instax frame */
 #camera-feed {
     width: 100%;
