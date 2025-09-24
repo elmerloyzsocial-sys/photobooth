@@ -32,6 +32,7 @@ class PhotoboothApp {
         this.printBtn = document.getElementById('print-photo');
         this.printAllBtn = document.getElementById('print-all-photos');
         this.shareBtn = document.getElementById('share-photo');
+        this.qrCodeBtn = document.getElementById('qr-code-btn');
         this.retakeBtn = document.getElementById('retake-photo');
         this.toggleVideoSizeBtn = document.getElementById('toggle-video-size');
         this.downloadGalleryBtn = document.getElementById('download-gallery');
@@ -39,6 +40,11 @@ class PhotoboothApp {
         this.sidebarGallery = document.getElementById('sidebar-gallery');
         // Instax overlay message
         this.instaxMessage = document.getElementById('instax-message');
+        // QR Modal
+        this.qrModal = document.getElementById('qr-modal');
+        this.qrModalClose = document.getElementById('qr-modal-close');
+        this.qrCodeDiv = document.getElementById('qr-code');
+        this.qrModalLink = document.getElementById('qr-modal-link');
     }
 
     bindEvents() {
@@ -53,6 +59,15 @@ class PhotoboothApp {
         if (this.toggleVideoSizeBtn)
             this.toggleVideoSizeBtn.addEventListener('click', () => this.toggleVideoSize());
         this.downloadGalleryBtn.addEventListener('click', () => this.downloadGallery());
+
+        // QR code button events
+        this.qrCodeBtn.addEventListener('click', () => this.showQRCode());
+        this.qrModalClose.addEventListener('click', () => this.hideQRCode());
+        // Hide QR modal on overlay click (not on content click)
+        this.qrModal.addEventListener('click', (e) => {
+            if (e.target === this.qrModal) this.hideQRCode();
+        });
+
         window.addEventListener('orientationchange', () => setTimeout(() => this.handleOrientationChange(), 500));
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && !this.stream) {
@@ -286,6 +301,7 @@ class PhotoboothApp {
         this.printBtn.disabled = false;
         this.printAllBtn.disabled = false;
         this.shareBtn.disabled = false;
+        this.qrCodeBtn.disabled = false;
         this.retakeBtn.style.display = 'block';
         this.takePhotoBtn.style.display = 'none';
         this.updateSidebarGallery(idx);
@@ -423,6 +439,7 @@ class PhotoboothApp {
         this.printBtn.disabled = true;
         this.printAllBtn.disabled = true;
         this.shareBtn.disabled = true;
+        this.qrCodeBtn.disabled = true;
         this.retakeBtn.style.display = 'none';
         this.takePhotoBtn.style.display = 'block';
         this.updateSidebarGallery();
@@ -617,6 +634,43 @@ class PhotoboothApp {
         }
     }
 
+    // --- QR Code Feature ---
+    showQRCode() {
+        if (!this.capturedPhotoBlobs.length) return;
+        // Remove any previous QR code
+        this.qrCodeDiv.innerHTML = '';
+        this.qrModalLink.textContent = '';
+        // Generate a Blob URL for current photo
+        const blob = this.capturedPhotoBlobs[this.currentPhotoIndex];
+        const photoURL = URL.createObjectURL(blob);
+        // Show the modal
+        this.qrModal.style.display = 'flex';
+        // Generate QR Code
+        new QRCode(this.qrCodeDiv, {
+            text: photoURL,
+            width: 186,
+            height: 186,
+            colorDark: "#222",
+            colorLight: "#fff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+        // Show link below QR
+        this.qrModalLink.textContent = photoURL;
+        // Revoke the Blob URL after modal closes (to avoid memory leak)
+        this._qrPhotoURL = photoURL;
+    }
+
+    hideQRCode() {
+        this.qrModal.style.display = 'none';
+        // Clean up QR code and Blob URL
+        this.qrCodeDiv.innerHTML = '';
+        this.qrModalLink.textContent = '';
+        if (this._qrPhotoURL) {
+            URL.revokeObjectURL(this._qrPhotoURL);
+            this._qrPhotoURL = null;
+        }
+    }
+
     handleOrientationChange() {
         if (this.stream) setTimeout(() => this.initializeCamera(), 100);
     }
@@ -629,7 +683,11 @@ class PhotoboothApp {
             clearInterval(this.overlayMessageInterval);
         }
     }
-  
+
+    // --- Overlay Message Rotation (unchanged, just placeholder) ---
+    startOverlayMessageRotation() {
+        // You can implement rotating overlay messages if desired.
+    }
 }
 document.addEventListener('DOMContentLoaded', () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
