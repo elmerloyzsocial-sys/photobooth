@@ -9,12 +9,11 @@ class PhotoboothApp {
         this.currentPhotoIndex = 0;
         this.compositeCanvas = document.createElement('canvas');
         this.overlayMessageInterval = null;
-        this.printHistory = [];
 
         this.initializeElements();
         this.bindEvents();
         this.initializeCamera();
-        this.startOverlayMessageRotation?.();
+        this.startOverlayMessageRotation();
     }
 
     initializeElements() {
@@ -36,22 +35,10 @@ class PhotoboothApp {
         this.retakeBtn = document.getElementById('retake-photo');
         this.toggleVideoSizeBtn = document.getElementById('toggle-video-size');
         this.downloadGalleryBtn = document.getElementById('download-gallery');
+        // Sidebar gallery
         this.sidebarGallery = document.getElementById('sidebar-gallery');
+        // Instax overlay message
         this.instaxMessage = document.getElementById('instax-message');
-        this.advancedPrintBtn = document.getElementById('advanced-print-btn');
-        this.advancedPrintModal = document.getElementById('advanced-print-modal');
-        this.closeAdvancedModalBtn = document.getElementById('close-advanced-modal');
-        this.advancedPrintForm = document.getElementById('advanced-print-form');
-        this.printLayoutSel = document.getElementById('print-layout');
-        this.printBorderSel = document.getElementById('print-border');
-        this.addStickersChk = document.getElementById('add-stickers');
-        this.printCaptionInput = document.getElementById('print-caption');
-        this.printSizeSel = document.getElementById('print-size');
-        this.printDpiInput = document.getElementById('print-dpi');
-        this.addQrChk = document.getElementById('add-qr');
-        this.batchSelectPhotosDiv = document.getElementById('batch-select-photos');
-        this.printLimitInput = document.getElementById('print-limit');
-        this.printHistoryDiv = document.getElementById('print-history');
     }
 
     bindEvents() {
@@ -72,11 +59,6 @@ class PhotoboothApp {
                 this.initializeCamera();
             }
         });
-
-        // Advanced Print
-        this.advancedPrintBtn.addEventListener('click', () => this.openAdvancedPrintModal());
-        this.closeAdvancedModalBtn.addEventListener('click', () => this.closeAdvancedPrintModal());
-        this.advancedPrintForm.addEventListener('submit', (e) => this.handleAdvancedPrint(e));
     }
 
     adjustTimer(change) {
@@ -493,29 +475,35 @@ class PhotoboothApp {
     // UPDATED PRINT ALL FOR 4x4 INCHES AT 300DPI WITH INDIVIDUAL PHOTO BORDER
     async printAllPhotos() {
         if (!this.capturedPhotoBlobs.length) return;
+
         // Load up to 4 images as HTMLImageElements
         const images = await Promise.all(
             this.capturedPhotoBlobs.slice(0, 4).map(blob => this.loadImageFromBlob(blob))
         );
+
         // 4x4 inches at 300 DPI (square)
         const DPI = 300;
         const printWidth = 4 * DPI; // 1200px
         const printHeight = 4 * DPI; // 1200px
+
         // Margins and spacing
         const border = 32; // px, outer white border
         const gap = 40; // px, between photos
         const frameMargin = 18; // px, border around each photo
+
         // Calculate photo area
         const n = images.length;
         const availableHeight = printHeight - (2 * border) - (gap * (n - 1));
         const photoHeight = Math.floor(availableHeight / n);
         const photoWidth = printWidth - 2 * border;
+
         // Prepare composite canvas
         this.compositeCanvas.width = printWidth;
         this.compositeCanvas.height = printHeight;
         const ctx = this.compositeCanvas.getContext('2d');
         ctx.fillStyle = "#FFFAE6";
         ctx.fillRect(0, 0, printWidth, printHeight);
+
         // Draw and center each photo with its own border
         let y = border;
         images.forEach((img, i) => {
@@ -529,6 +517,7 @@ class PhotoboothApp {
                 targetWidth = Math.min(photoWidth, Math.floor(photoHeight * imgAspect));
             }
             const x = border + Math.floor((photoWidth - targetWidth) / 2);
+
             // Draw border behind each photo
             ctx.fillStyle = "#fff"; // photo border color (white)
             ctx.fillRect(
@@ -537,10 +526,12 @@ class PhotoboothApp {
                 targetWidth + 2 * frameMargin,
                 targetHeight + 2 * frameMargin
             );
+
             // Draw photo
             ctx.drawImage(img, x, y, targetWidth, targetHeight);
             y += photoHeight + gap;
         });
+
         // Print the composite
         this.compositeCanvas.toBlob((blob) => {
             const photoURL = URL.createObjectURL(blob);
@@ -638,230 +629,7 @@ class PhotoboothApp {
             clearInterval(this.overlayMessageInterval);
         }
     }
-
-    // --- Advanced Print Modal Logic ---
-    openAdvancedPrintModal() {
-        this.advancedPrintModal.style.display = 'flex';
-        this.renderBatchPhotoSelector();
-        this.updatePrintHistory();
-    }
-    closeAdvancedPrintModal() {
-        this.advancedPrintModal.style.display = 'none';
-    }
-    renderBatchPhotoSelector() {
-        this.batchSelectPhotosDiv.innerHTML = '';
-        this.batchPhotoSelections = this.capturedPhotoBlobs.map(() => false);
-        this.capturedPhotoBlobs.forEach((blob, i) => {
-            const img = document.createElement('img');
-            img.src = URL.createObjectURL(blob);
-            img.className = 'batch-photo-thumb';
-            img.title = `Photo ${i + 1}`;
-            img.addEventListener('click', () => {
-                this.batchPhotoSelections[i] = !this.batchPhotoSelections[i];
-                img.classList.toggle('selected', this.batchPhotoSelections[i]);
-            });
-            this.batchSelectPhotosDiv.appendChild(img);
-        });
-    }
-    updatePrintHistory() {
-        const history = this.printHistory || [];
-        if (!history.length) {
-            this.printHistoryDiv.textContent = 'No print jobs this session.';
-            return;
-        }
-        this.printHistoryDiv.innerHTML = '<b>Print History:</b><ul style="margin:0 0 0 16px;padding:0">';
-        history.slice(-10).forEach((job, idx) => {
-            this.printHistoryDiv.innerHTML += `<li>${job.time}: ${job.summary}</li>`;
-        });
-        this.printHistoryDiv.innerHTML += '</ul>';
-    }
-    handleAdvancedPrint(e) {
-        e.preventDefault();
-        // Gather values
-        const layout = this.printLayoutSel.value;
-        const border = this.printBorderSel.value;
-        const addStickers = this.addStickersChk.checked;
-        const caption = this.printCaptionInput.value;
-        const size = this.printSizeSel.value;
-        const dpi = parseInt(this.printDpiInput.value, 10);
-        const addQr = this.addQrChk.checked;
-        const limit = parseInt(this.printLimitInput.value, 10);
-        // Gather which photos to print
-        const selectedIdx = this.batchPhotoSelections
-            ? this.batchPhotoSelections.map((v, i) => v ? i : -1).filter(i => i >= 0)
-            : [this.currentPhotoIndex];
-        // Print count limiter
-        this.printHistory = this.printHistory || [];
-        if (this.printHistory.length >= limit) {
-            alert(`Print limit of ${limit} reached for this session.`);
-            return;
-        }
-        // Prepare job summary
-        const summary = `${layout} layout, ${border} border, ${selectedIdx.length} photo(s), "${caption}"`;
-        // Save to history
-        this.printHistory.push({
-            time: new Date().toLocaleTimeString(),
-            summary,
-        });
-        this.updatePrintHistory();
-        this.closeAdvancedPrintModal();
-        // Call custom print logic
-        this.advancedPrintPhotos({
-            layout, border, addStickers, caption, size, dpi, addQr,
-            photoIndices: selectedIdx,
-        });
-    }
-    async advancedPrintPhotos({layout, border, addStickers, caption, size, dpi, addQr, photoIndices}) {
-        const photos = photoIndices.map(idx => this.capturedPhotoBlobs[idx]);
-        if (!photos.length) {
-            alert("No photos selected for printing.");
-            return;
-        }
-        // 1. Get images
-        const images = await Promise.all(photos.map(blob => this.loadImageFromBlob(blob)));
-        // 2. Determine layout size
-        let printWidth = 1200, printHeight = 1800; // default 4x6in at 300dpi
-        if (size === "3x5") { printWidth = 900; printHeight = 1500; }
-        else if (size === "square") { printWidth = 1200; printHeight = 1200; }
-        else if (size === "wallet") { printWidth = 600; printHeight = 900; } // 2x3 in
-        printWidth = Math.floor(printWidth * (dpi / 300));
-        printHeight = Math.floor(printHeight * (dpi / 300));
-        // 3. Prepare canvas
-        this.compositeCanvas.width = printWidth;
-        this.compositeCanvas.height = printHeight;
-        const ctx = this.compositeCanvas.getContext('2d');
-        // 4. Draw border/background
-        ctx.fillStyle = (border === "white") ? "#fff" :
-                        (border === "party") ? "#ffe0f7" :
-                        (border === "wedding") ? "#f8f7f4" :
-                        (border === "birthday") ? "#fffbe0" : "#fff";
-        ctx.fillRect(0, 0, printWidth, printHeight);
-        // 5. Draw photos according to layout
-        if (layout === "single") {
-            // Center photo
-            this.drawPhotoWithExtras(ctx, images[0], printWidth, printHeight, caption, addStickers, addQr);
-        } else if (layout === "strip") {
-            // 4 in a row, vertical strip
-            const eachH = Math.floor(printHeight / 4 * 0.82);
-            const eachW = Math.floor(printWidth * 0.88);
-            let y = Math.floor((printHeight - eachH*photos.length)/2);
-            for (let i=0; i<images.length; i++) {
-                this.drawPhotoWithExtras(
-                    ctx, images[i], eachW, eachH, (i===0 ? caption : ''), addStickers, addQr,
-                    Math.floor((printWidth-eachW)/2), y
-                );
-                y += eachH + 12;
-            }
-        } else if (layout === "collage") {
-            // 2x2 grid
-            const rows = 2, cols = 2;
-            const eachW = Math.floor(printWidth / cols * 0.9);
-            const eachH = Math.floor(printHeight / rows * 0.85);
-            let k = 0;
-            for (let r=0; r<rows; r++) for (let c=0; c<cols; c++) {
-                if (k >= images.length) break;
-                this.drawPhotoWithExtras(
-                    ctx, images[k], eachW, eachH, (k===0 ? caption : ''), addStickers, addQr,
-                    Math.floor(c*printWidth/cols + (printWidth/cols-eachW)/2),
-                    Math.floor(r*printHeight/rows + (printHeight/rows-eachH)/2)
-                );
-                k++;
-            }
-        }
-        // 6. Confirmation animation
-        this.createPrintAnimation();
-        // 7. Print (open new window with image and print)
-        this.compositeCanvas.toBlob((blob) => {
-            const photoURL = URL.createObjectURL(blob);
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Print Photos</title>
-                    <style>
-                        @page { margin: 0; size: auto; }
-                        html, body {
-                            width: 100vw; height: 100vh; margin:0; padding:0; background:white;
-                        }
-                        body { display: flex; align-items: center; justify-content: center; min-height: 100vh;}
-                        img { width: 100%; height: auto; display:block; }
-                        @media print { body {margin:0; padding:0;} }
-                    </style>
-                </head>
-                <body>
-                    <img src="${photoURL}" alt="Photobooth Print" onload="window.print(); window.close();">
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
-        }, 'image/png');
-    }
-    // Helper: draw a photo (with optional caption, stickers, QR)
-    drawPhotoWithExtras(ctx, img, outW, outH, caption, addStickers, addQr, x=0, y=0) {
-        // Maintain aspect ratio
-        let imgW = outW, imgH = outH;
-        const aspectImg = img.width / img.height, aspectOut = outW / outH;
-        if (aspectImg > aspectOut) {
-            imgH = outH;
-            imgW = imgH * aspectImg;
-        } else {
-            imgW = outW;
-            imgH = imgW / aspectImg;
-        }
-        const dx = x + Math.floor((outW - imgW) / 2);
-        const dy = y + Math.floor((outH - imgH) / 2);
-        ctx.save();
-        ctx.drawImage(img, dx, dy, imgW, imgH);
-        // Stickers (example: smiley face, star, etc.)
-        if (addStickers) {
-            ctx.font = "28px Arial";
-            ctx.globalAlpha = 0.88;
-            ctx.fillText("😀⭐", dx+20, dy+38);
-            ctx.globalAlpha = 1.0;
-        }
-        // Caption
-        if (caption) {
-            ctx.font = "bold 26px 'Permanent Marker','Comic Sans MS',cursive,Arial";
-            ctx.fillStyle = "#fd6e77";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "bottom";
-            ctx.shadowColor = "#fff";
-            ctx.shadowBlur = 3;
-            ctx.fillText(caption, x + outW/2, y + outH - 18);
-            ctx.shadowBlur = 0;
-        }
-        // QR code (very basic: uses Google Chart API)
-        if (addQr) {
-            const qrUrl = "https://chart.googleapis.com/chart?cht=qr&chs=90x90&chl=" + encodeURIComponent(window.location.href);
-            const qrImg = new window.Image();
-            qrImg.onload = () => {
-                ctx.drawImage(qrImg, x+outW-60, y+outH-60, 42, 42);
-            };
-            qrImg.src = qrUrl;
-        }
-        ctx.restore();
-    }
-    createPrintAnimation() {
-        // Show a quick slide-out animation at the bottom of the screen
-        const anim = document.createElement('div');
-        anim.style.position = 'fixed';
-        anim.style.bottom = '22px';
-        anim.style.left = '50%';
-        anim.style.transform = 'translateX(-50%)';
-        anim.style.background = '#fff';
-        anim.style.color = '#fd6e77';
-        anim.style.fontWeight = 'bold';
-        anim.style.fontSize = '1.1rem';
-        anim.style.padding = '18px 32px';
-        anim.style.borderRadius = '20px';
-        anim.style.boxShadow = '0 4px 18px #f7797d55';
-        anim.style.zIndex = 999999;
-        anim.textContent = '🖨️ Print job sent!';
-        document.body.appendChild(anim);
-        setTimeout(() => anim.style.opacity = '0', 1100);
-        setTimeout(() => anim.remove(), 1800);
-    }
+  
 }
 document.addEventListener('DOMContentLoaded', () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -877,6 +645,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.photoboothApp = new PhotoboothApp();
 });
+
 window.addEventListener('beforeunload', () => {
     if (window.photoboothApp) {
         window.photoboothApp.destroy();

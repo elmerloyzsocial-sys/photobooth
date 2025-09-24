@@ -35,53 +35,6 @@ body {
     position: relative;
 }
 
-/* --- Instax Frame Styling --- */
-.instax-frame {
-    position: relative;
-    background: #fff;
-    width: 320px;
-    aspect-ratio: 54/86;
-    margin: 0 auto;
-    box-shadow:
-        0 8px 24px rgba(0,0,0,0.23),
-        0 0 0 2.5px #e1e1e1;
-    border-radius: 16px;
-    border: 18px solid #fff;
-    border-bottom-width: 48px;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: box-shadow 0.2s, transform 0.2s;
-}
-.instax-frame:hover {
-    box-shadow:
-        0 12px 36px rgba(0,0,0,0.28),
-        0 0 0 4px #eaeaea;
-    transform: scale(1.02) rotate(-1deg);
-}
-.instax-photo-area {
-    width: 100%;
-    height: 100%;
-    border-radius: 8px;
-    object-fit: cover;
-    background: #f7f7f7;
-}
-.instax-label {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 16px;
-    height: 28px;
-    text-align: center;
-    font-family: 'Permanent Marker', 'Comic Sans MS', cursive, Arial, sans-serif;
-    font-size: 1.1rem;
-    color: #888;
-    letter-spacing: 0.02em;
-    pointer-events: none;
-    user-select: none;
-    opacity: 0.8;
-}
 .instax-overlay {
   pointer-events: none;
   position: absolute;
@@ -92,18 +45,19 @@ body {
   align-items: center;
   z-index: 3;
 }
-.instax-frame-border {
-    position: absolute;
-    top: 2.5%;
-    left: 2.5%;
-    width: 95%;
-    height: 87%;
-    border: 8px solid #fff;
-    border-radius: 18px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-    box-sizing: border-box;
-    background: transparent;
+
+.instax-overlay .instax-frame {
+  position: absolute;
+  top: 2.5%;
+  left: 2.5%;
+  width: 95%;
+  height: 87%;
+  border: 8px solid #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  box-sizing: border-box;
 }
+
 .instax-message {
   position: absolute;
   bottom: 5%;
@@ -117,6 +71,38 @@ body {
   font-weight: bold;
   text-shadow: 1px 1px 6px #fff, 0 0 2px #fff;
   pointer-events: none;
+}
+
+/* Instax photo frame styling */
+.instax-frame {
+    position: relative;
+    background: #fffbea;
+    padding: 36px 36px 110px 36px;
+    border-radius: 24px;
+    box-shadow: 0 10px 40px 0 rgba(0,0,0,0.25), 0 0 0 8px #ffe0e9;
+    width: 1100px;
+    max-width: 90%; /* default max-width is 95% */
+    aspect-ratio: 4/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    transition: transform 0.3s;
+    overflow: visible;
+}
+.instax-frame:hover {
+    transform: scale(1.01) rotate(-2deg);
+    box-shadow: 0 12px 50px 0 rgba(0,0,0,0.27), 0 0 0 10px #ffe0e9;
+}
+
+/* Camera inside Instax frame */
+#camera-feed {
+    width: 100%;
+    height: 100%;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(100,100,100,0.12);
+    object-fit: cover;
+    background: #ddd;
 }
 
 /* Controls as a bottom sheet */
@@ -156,7 +142,6 @@ body {
     color: #444;
     transition: all 0.18s;
     position: relative;
-    flex-direction: column;
 }
 .dslr-btn:active {
     transform: scale(0.96);
@@ -168,26 +153,13 @@ body {
     background: linear-gradient(135deg, #f7797d 40%, #f5f7fa 100%);
     color: #fff;
 }
+
+/* Example icon styling (override as needed) */
 .dslr-btn svg {
     width: 34px;
     height: 34px;
     fill: currentColor;
     display: block;
-}
-.btn-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.btn-label {
-  font-size: 0.7rem;
-  color: #888;
-  margin-top: 2px;
-  line-height: 1;
-  pointer-events: none;
-  user-select: none;
-  font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
-  letter-spacing: 0.01em;
 }
 
 /* Gallery sidebar (right 20%) */
@@ -205,6 +177,7 @@ body {
     border-bottom-left-radius: 32px;
     min-width: 200px;
 }
+
 .gallery-title {
     font-size: 1.3rem;
     font-weight: bold;
@@ -357,93 +330,27 @@ body {
     100% { transform: scale(1); opacity: 1; }
 }
 
-/* --- Advanced Print Modal Styles --- */
-.advanced-print-modal {
-    position: fixed;
-    z-index: 10000;
-    left: 0; top: 0; width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.46);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.dslr-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* keep your existing padding and size */
 }
-.advanced-print-content {
-    background: #fffdfa;
-    border-radius: 24px;
-    padding: 32px 28px 24px 28px;
-    box-shadow: 0 8px 32px #4dabf788;
-    min-width: 340px;
-    max-width: 95vw;
-    max-height: 90vh;
-    overflow-y: auto;
-    position: relative;
-    animation: fadeIn 0.22s;
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.close-advanced-modal {
-    position: absolute;
-    top: 8px; right: 12px;
-    background: none;
-    border: none;
-    font-size: 2rem;
-    color: #f7797d;
-    cursor: pointer;
-}
-.advanced-print-content h2 {
-    text-align: center;
-    margin-bottom: 16px;
-    color: #fd6e77;
-    font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
-}
-.option-group {
-    margin-bottom: 14px;
-    display: flex;
-    flex-direction: column;
-}
-.option-group label {
-    font-weight: bold;
-    color: #888;
-    margin-bottom: 4px;
-    font-size: 1rem;
-}
-.option-group input[type="text"],
-.option-group select,
-.option-group input[type="number"] {
-    font-size: 1rem;
-    padding: 6px 9px;
-    border-radius: 8px;
-    border: 1.5px solid #f7797d99;
-    margin-bottom: 4px;
-    background: #f8f9fa;
-    color: #444;
-}
-.option-group input[type="checkbox"] {
-    transform: scale(1.2);
-    margin-right: 7px;
-}
-#print-history {
-    margin-top: 18px;
-    font-size: 0.96rem;
-    color: #888;
-}
-#batch-select-photos {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-.batch-photo-thumb {
-    width: 48px; height: 36px;
-    object-fit: cover;
-    border-radius: 8px;
-    outline: 2px solid #fd6e77;
-    cursor: pointer;
-    opacity: 0.7;
-    transition: outline 0.15s, opacity 0.2s;
-}
-.batch-photo-thumb.selected {
-    outline: 3px solid #f7797d;
-    opacity: 1;
-}
-@keyframes fadeIn {
-    0% { opacity: 0; transform: scale(0.98);}
-    100% { opacity: 1; transform: scale(1);}
+
+.btn-label {
+  font-size: 0.7rem;
+  color: #888;
+  margin-top: 2px;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
+  letter-spacing: 0.01em;
 }
