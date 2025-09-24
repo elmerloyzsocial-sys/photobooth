@@ -95,6 +95,34 @@ body {
     box-shadow: 0 12px 50px 0 rgba(0,0,0,0.27), 0 0 0 10px #ffe0e9;
 }
 
+.instax-frame-border {
+    position: absolute;
+    top: 2.5%;
+    left: 2.5%;
+    width: 95%;
+    height: 87%;
+    border: 12px solid #fff;
+    border-bottom: 38px solid #fff; /* Thicker bottom */
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25), 0 2px 12px 2px #d1d1d1;
+    box-sizing: border-box;
+    background: 
+        repeating-linear-gradient(135deg, #fff 0 8px, #f6f6f6 8px 16px),
+        url('img/paper-texture.png'); /* Add this image for realism */
+}
+
+/* Shine effect: */
+.instax-frame-border::after {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 10px; left: 10px;
+    width: 60%; height: 20px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.33), rgba(255,255,255,0));
+    border-radius: 8px;
+    pointer-events: none;
+}
+
 /* Camera inside Instax frame */
 #camera-feed {
     width: 100%;
