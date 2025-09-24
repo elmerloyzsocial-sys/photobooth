@@ -354,12 +354,3 @@ body {
   font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
   letter-spacing: 0.01em;
 }
-
-/* QR Modal override for smaller screens */
-@media (max-width: 600px) {
-    .qr-modal-content {
-        min-width: unset;
-        width: 96vw;
-        padding: 18px 4vw 16px 4vw;
-    }
-}

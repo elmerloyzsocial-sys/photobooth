@@ -6,7 +6,6 @@ class PhotoboothApp {
         this.isCountingDown = false;
         this.isLargeVideo = false;
         this.capturedPhotoBlobs = [];
-        this.publicPhotoLinks = []; // <-- NEW: stores public links per photo
         this.currentPhotoIndex = 0;
         this.compositeCanvas = document.createElement('canvas');
         this.overlayMessageInterval = null;
@@ -33,16 +32,13 @@ class PhotoboothApp {
         this.printBtn = document.getElementById('print-photo');
         this.printAllBtn = document.getElementById('print-all-photos');
         this.shareBtn = document.getElementById('share-photo');
-        this.qrCodeBtn = document.getElementById('qr-code-btn');
         this.retakeBtn = document.getElementById('retake-photo');
         this.toggleVideoSizeBtn = document.getElementById('toggle-video-size');
         this.downloadGalleryBtn = document.getElementById('download-gallery');
+        // Sidebar gallery
         this.sidebarGallery = document.getElementById('sidebar-gallery');
+        // Instax overlay message
         this.instaxMessage = document.getElementById('instax-message');
-        this.qrModal = document.getElementById('qr-modal');
-        this.qrModalClose = document.getElementById('qr-modal-close');
-        this.qrCodeDiv = document.getElementById('qr-code');
-        this.qrModalLink = document.getElementById('qr-modal-link');
     }
 
     bindEvents() {
@@ -57,14 +53,6 @@ class PhotoboothApp {
         if (this.toggleVideoSizeBtn)
             this.toggleVideoSizeBtn.addEventListener('click', () => this.toggleVideoSize());
         this.downloadGalleryBtn.addEventListener('click', () => this.downloadGallery());
-
-        // QR code button events
-        this.qrCodeBtn.addEventListener('click', () => this.showQRCode());
-        this.qrModalClose.addEventListener('click', () => this.hideQRCode());
-        this.qrModal.addEventListener('click', (e) => {
-            if (e.target === this.qrModal) this.hideQRCode();
-        });
-
         window.addEventListener('orientationchange', () => setTimeout(() => this.handleOrientationChange(), 500));
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && !this.stream) {
@@ -194,7 +182,6 @@ class PhotoboothApp {
         this.isCountingDown = true;
         this.disableCameraControls();
         this.capturedPhotoBlobs = [];
-        this.publicPhotoLinks = [];
         this.currentPhotoIndex = 0;
         const numPhotos = 4;
         for (let i = 0; i < numPhotos; i++) {
@@ -281,7 +268,6 @@ class PhotoboothApp {
                 this.addThankYouFrame(ctx, frameWidth, frameHeight);
                 this.canvasElement.toBlob(blob => {
                     this.capturedPhotoBlobs.push(blob);
-                    this.publicPhotoLinks.push(null); // Placeholder for uploaded link
                     resolve(blob);
                 }, 'image/jpeg', 0.9);
             } catch (e) {
@@ -300,17 +286,9 @@ class PhotoboothApp {
         this.printBtn.disabled = false;
         this.printAllBtn.disabled = false;
         this.shareBtn.disabled = false;
-        this.qrCodeBtn.disabled = false; // will be enabled after upload
         this.retakeBtn.style.display = 'block';
         this.takePhotoBtn.style.display = 'none';
         this.updateSidebarGallery(idx);
-
-        // Enable QR button only if already uploaded
-        if (this.publicPhotoLinks[idx]) {
-            this.qrCodeBtn.disabled = false;
-        } else {
-            this.qrCodeBtn.disabled = false; // Let them click and upload
-        }
     }
 
     updateSidebarGallery(selectedIdx) {
@@ -348,8 +326,83 @@ class PhotoboothApp {
     }
 
     addThankYouFrame(ctx, width, height) {
-        // ...existing bible verse overlay...
-        // (Keep as in your prior version)
+        // Array of Bible verses/phrases (add as many as you like)
+        const verses = [
+            // Bible verses about joy
+            "The joy of the Lord is your strength. - Nehemiah 8:10",
+            "This is the day that the Lord has made; let us rejoice and be glad in it. - Psalm 118:24",
+            "Rejoice in the Lord always. I will say it again: Rejoice! - Philippians 4:4",
+            "You make known to me the path of life; in your presence there is fullness of joy. - Psalm 16:11",
+            "You have turned my mourning into joyful dancing. - Psalm 30:11",
+            "A cheerful heart is good medicine. - Proverbs 17:22",
+            "Shout for joy to the Lord, all the earth. - Psalm 100:1",
+            "May the God of hope fill you with all joy and peace as you trust in him. - Romans 15:13",
+            "I have told you this so that my joy may be in you and that your joy may be complete. - John 15:11",
+            "Those who sow with tears will reap with songs of joy. - Psalm 126:5",
+            // Joyful phrases
+            "Let your heart be full of joy!",
+            "Smile—God loves you!",
+            "Choose joy every day.",
+            "Joy is a gift—share it!",
+            "Today is a day for joyful memories!",
+            // Love
+            "Above all, love each other deeply, because love covers over a multitude of sins. - 1 Peter 4:8",
+            "Let all that you do be done in love. - 1 Corinthians 16:14",
+            "Love is patient, love is kind. - 1 Corinthians 13:4",
+            "And now these three remain: faith, hope and love. But the greatest of these is love. - 1 Corinthians 13:13",
+            "We love because He first loved us. - 1 John 4:19",
+            "Let us love one another, for love comes from God. - 1 John 4:7",
+            // Respect
+            "Be devoted to one another in love. Honor one another above yourselves. - Romans 12:10",
+            "Show proper respect to everyone, love the family of believers, fear God. - 1 Peter 2:17",
+            "Honor your father and your mother. - Exodus 20:12",
+            "Do to others as you would have them do to you. - Luke 6:31",
+            "Encourage one another and build each other up. - 1 Thessalonians 5:11",
+            "A friend loves at all times. - Proverbs 17:17",
+            // Phrases
+            "Respect is love in action.",
+            "Kindness is a language the deaf can hear and the blind can see.",
+            "Love and respect make a family strong.",
+            "Treat others with love and respect, always.",
+            "Where there is love, there is respect.",
+            "Respecting each other brings us closer together.",
+            "Let love and respect guide your heart.",
+        ];
+
+        // Pick a random verse/phrase
+        const verse = verses[Math.floor(Math.random() * verses.length)];
+
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(20, 20, width - 40, height - 80);
+
+        // Use a playful font if you have it loaded, otherwise fallback
+        ctx.fillStyle = '#666666';
+        ctx.font = "bold 20px 'Fredoka One', 'Comic Sans MS', cursive, Arial";
+        ctx.textAlign = 'center';
+
+        // Draw the verse, wrapping if it's too long
+        const maxWidth = width - 50;
+        const lines = [];
+        let currentLine = '';
+        verse.split(' ').forEach(word => {
+            const testLine = currentLine + (currentLine ? ' ' : '') + word;
+            if (ctx.measureText(testLine).width > maxWidth) {
+                lines.push(currentLine);
+                currentLine = word;
+            } else {
+                currentLine = testLine;
+            }
+        });
+        if (currentLine) lines.push(currentLine);
+
+        // Draw lines above the bottom padding
+        const lineHeight = 24;
+        let y = height - 20 - (lines.length - 1) * lineHeight;
+        lines.forEach(line => {
+            ctx.fillText(line, width / 2, y);
+            y += lineHeight;
+        });
     }
 
     createFlashEffect() {
@@ -363,7 +416,6 @@ class PhotoboothApp {
 
     retakePhotos() {
         this.capturedPhotoBlobs = [];
-        this.publicPhotoLinks = [];
         this.currentPhotoIndex = 0;
         this.capturedPhotoDiv.style.display = 'none';
         this.videoElement.style.display = 'block';
@@ -371,95 +423,214 @@ class PhotoboothApp {
         this.printBtn.disabled = true;
         this.printAllBtn.disabled = true;
         this.shareBtn.disabled = true;
-        this.qrCodeBtn.disabled = true;
         this.retakeBtn.style.display = 'none';
         this.takePhotoBtn.style.display = 'block';
         this.updateSidebarGallery();
     }
 
-    async printPhoto() { /* ...unchanged... */ }
-    async printAllPhotos() { /* ...unchanged... */ }
-    loadImageFromBlob(blob) { /* ...unchanged... */ }
-    async sharePhoto() { /* ...unchanged... */ }
-
-    // --- QR Code Feature with Public Link ---
-    async showQRCode() {
+    async printPhoto() {
         if (!this.capturedPhotoBlobs.length) return;
-        const idx = this.currentPhotoIndex;
-        // Remove any previous QR code
-        this.qrCodeDiv.innerHTML = '';
-        this.qrModalLink.textContent = '';
-        this.qrModal.style.display = 'flex';
-
-        // If already uploaded, use the cached public link:
-        if (this.publicPhotoLinks[idx]) {
-            this.renderQRCodeForLink(this.publicPhotoLinks[idx]);
-            return;
-        }
-
-        // Otherwise, upload to Imgur (or your own public API)
-        this.qrModalLink.textContent = 'Uploading photo for sharing...';
-        this.qrCodeBtn.disabled = true;
-
         try {
-            const publicUrl = await this.uploadToImgur(this.capturedPhotoBlobs[idx]);
-            this.publicPhotoLinks[idx] = publicUrl;
-            this.renderQRCodeForLink(publicUrl);
-        } catch (e) {
-            this.qrModalLink.textContent = 'Failed to upload photo. Please try again.';
-        } finally {
-            this.qrCodeBtn.disabled = false;
+            const blob = this.capturedPhotoBlobs[this.currentPhotoIndex];
+            const photoURL = URL.createObjectURL(blob);
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Print Photo</title>
+                    <style>
+                        body { 
+                            margin: 0; 
+                            padding: 20px; 
+                            display: flex; 
+                            justify-content: center; 
+                            align-items: center; 
+                            min-height: 100vh;
+                            background: white;
+                        }
+                        img { 
+                            max-width: 100%; 
+                            max-height: 100%; 
+                            border: 20px solid white;
+                            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+                        }
+                        @media print {
+                            body { padding: 0; }
+                            img { border: 10px solid white; box-shadow: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <img src="${photoURL}" alt="Captured Photo" onload="window.print(); window.close();">
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        } catch (error) {
+            alert('Failed to print photo. Please try again.');
         }
     }
 
-    renderQRCodeForLink(link) {
-        this.qrCodeDiv.innerHTML = '';
-        new QRCode(this.qrCodeDiv, {
-            text: link,
-            width: 186,
-            height: 186,
-            colorDark: "#222",
-            colorLight: "#fff",
-            correctLevel: QRCode.CorrectLevel.H
+    // UPDATED PRINT ALL FOR 4x4 INCHES AT 300DPI WITH INDIVIDUAL PHOTO BORDER
+    async printAllPhotos() {
+        if (!this.capturedPhotoBlobs.length) return;
+
+        // Load up to 4 images as HTMLImageElements
+        const images = await Promise.all(
+            this.capturedPhotoBlobs.slice(0, 4).map(blob => this.loadImageFromBlob(blob))
+        );
+
+        // 4x4 inches at 300 DPI (square)
+        const DPI = 300;
+        const printWidth = 4 * DPI; // 1200px
+        const printHeight = 4 * DPI; // 1200px
+
+        // Margins and spacing
+        const border = 32; // px, outer white border
+        const gap = 40; // px, between photos
+        const frameMargin = 18; // px, border around each photo
+
+        // Calculate photo area
+        const n = images.length;
+        const availableHeight = printHeight - (2 * border) - (gap * (n - 1));
+        const photoHeight = Math.floor(availableHeight / n);
+        const photoWidth = printWidth - 2 * border;
+
+        // Prepare composite canvas
+        this.compositeCanvas.width = printWidth;
+        this.compositeCanvas.height = printHeight;
+        const ctx = this.compositeCanvas.getContext('2d');
+        ctx.fillStyle = "#FFFAE6";
+        ctx.fillRect(0, 0, printWidth, printHeight);
+
+        // Draw and center each photo with its own border
+        let y = border;
+        images.forEach((img, i) => {
+            // Maintain aspect ratio, fit within photoWidth x photoHeight
+            let imgAspect = img.width / img.height;
+            let targetWidth = photoWidth;
+            let targetHeight = photoHeight;
+            if (img.width > img.height) {
+                targetHeight = Math.min(photoHeight, Math.floor(photoWidth / imgAspect));
+            } else {
+                targetWidth = Math.min(photoWidth, Math.floor(photoHeight * imgAspect));
+            }
+            const x = border + Math.floor((photoWidth - targetWidth) / 2);
+
+            // Draw border behind each photo
+            ctx.fillStyle = "#fff"; // photo border color (white)
+            ctx.fillRect(
+                x - frameMargin,
+                y - frameMargin,
+                targetWidth + 2 * frameMargin,
+                targetHeight + 2 * frameMargin
+            );
+
+            // Draw photo
+            ctx.drawImage(img, x, y, targetWidth, targetHeight);
+            y += photoHeight + gap;
         });
-        this.qrModalLink.textContent = link;
+
+        // Print the composite
+        this.compositeCanvas.toBlob((blob) => {
+            const photoURL = URL.createObjectURL(blob);
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Print All Photos</title>
+                    <style>
+                        @page {
+                            size: 4in 4in;
+                            margin: 0;
+                        }
+                        html, body {
+                            width: 4in;
+                            height: 4in;
+                            margin: 0;
+                            padding: 0;
+                            background: white;
+                        }
+                        body {
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 100vh;
+                        }
+                        img {
+                            width: 100%;
+                            height: auto;
+                            display: block;
+                            background: white;
+                        }
+                        @media print {
+                            body { margin: 0; padding: 0; }
+                            img { box-shadow: none; border: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <img src="${photoURL}" alt="All Photobooth Photos" onload="window.print(); window.close();">
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }, 'image/png');
     }
 
-    hideQRCode() {
-        this.qrModal.style.display = 'none';
-        this.qrCodeDiv.innerHTML = '';
-        this.qrModalLink.textContent = '';
-    }
-
-    /**
-     * Uploads image Blob to Imgur anonymously.
-     * @param {Blob} imageBlob 
-     * @returns {Promise<string>} URL
-     */
-    async uploadToImgur(imageBlob) {
-        // Replace this Client-ID with your own from https://api.imgur.com/oauth2/addclient (type: Anonymous usage)
-        const IMGUR_CLIENT_ID = "546c6d3e7b1dad6"; // Demo, get your own for production
-        const formData = new FormData();
-        formData.append('image', imageBlob);
-
-        const response = await fetch("https://api.imgur.com/3/image", {
-            method: "POST",
-            headers: {
-                Authorization: "Client-ID " + IMGUR_CLIENT_ID
-            },
-            body: formData
+    loadImageFromBlob(blob) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = URL.createObjectURL(blob);
         });
-        if (!response.ok) throw new Error("Upload failed");
-        const data = await response.json();
-        if (!data.success) throw new Error("Imgur upload error");
-        return data.data.link; // e.g. https://i.imgur.com/xxxxxxx.jpg
     }
 
-    handleOrientationChange() { /* ...unchanged... */ }
-    destroy() { /* ...unchanged... */ }
-    startOverlayMessageRotation() { /* ...unchanged... */ }
+    async sharePhoto() {
+        if (!this.capturedPhotoBlobs.length) return;
+        try {
+            const blob = this.capturedPhotoBlobs[this.currentPhotoIndex];
+            if (navigator.share && navigator.canShare) {
+                const file = new File([blob], 'photobooth-photo.jpg', { type: 'image/jpeg' });
+                if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        title: 'Photobooth Photo',
+                        text: 'Check out my photo from the photobooth!',
+                        files: [file]
+                    });
+                    return;
+                }
+            }
+            const photoURL = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = photoURL;
+            link.download = `photobooth-photo-${this.currentPhotoIndex + 1}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(photoURL);
+        } catch (error) {
+            alert('Failed to share photo. The photo has been downloaded instead.');
+        }
+    }
+
+    handleOrientationChange() {
+        if (this.stream) setTimeout(() => this.initializeCamera(), 100);
+    }
+
+    destroy() {
+        if (this.stream) {
+            this.stream.getTracks().forEach(track => track.stop());
+        }
+        if (this.overlayMessageInterval) {
+            clearInterval(this.overlayMessageInterval);
+        }
+    }
+  
 }
-
 document.addEventListener('DOMContentLoaded', () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         document.body.innerHTML = `
