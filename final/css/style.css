@@ -123,6 +123,45 @@ body {
     pointer-events: none;
 }
 
+.instax-frame {
+    position: relative;
+    background: #fffbea url('paper-texture.png');
+    padding: 36px 36px 110px 36px;
+    border-radius: 28px 28px 40px 40px/24px 24px 60px 60px;
+    box-shadow: 0 8px 30px 0 rgba(0,0,0,0.28), 0 0 0 12px #fff;
+    width: 1100px;
+    max-width: 90vw;
+    aspect-ratio: 4/3;
+    margin: 0 auto;
+    border-bottom: 40px solid #fff; /* extra for label area */
+    overflow: visible;
+}
+.instax-frame::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 14px;
+    border-radius: 14px 14px 20px 20px;
+    background: linear-gradient(90deg, #fff6, #fff0 80%);
+    opacity: 0.7;
+    pointer-events: none;
+}
+.instax-label {
+    position: absolute;
+    bottom: 8px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-family: 'Permanent Marker', 'Comic Sans MS', cursive;
+    font-size: 1.1rem;
+    color: #888;
+    letter-spacing: 0.04em;
+    pointer-events: none;
+}
+
 /* Camera inside Instax frame */
 #camera-feed {
     width: 100%;
